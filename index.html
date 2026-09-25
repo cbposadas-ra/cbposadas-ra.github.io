@@ -298,6 +298,25 @@
           </div>
         </div>
 
+        <!-- Facilities Layers -->
+        <div class="layer-category-card">
+          <div class="layer-category-header">Facilities</div>
+          <div class="layer-category-body">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="police_stations">
+              <label class="form-check-label" for="police_stations">Police Stations</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="fire_stations">
+              <label class="form-check-label" for="fire_stations">Fire Stations</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="barangay_halls">
+              <label class="form-check-label" for="barangay_halls">Barangay Halls</label>
+            </div>
+          </div>
+        </div>
+
         <!-- Climate & Environment Layers -->
         <div class="layer-category-card">
           <div class="layer-category-header">Climate & Environment</div>
@@ -339,6 +358,9 @@
     <div class="gis-legend-panel">
       <h3>Active Legends</h3>
       <div id="legend-activefault" class="legend-block"></div>
+      <div id="legend-police_stations" class="legend-block"></div>
+      <div id="legend-fire_stations" class="legend-block"></div>
+      <div id="legend-barangay_halls" class="legend-block"></div>
       <div id="legend-roads" class="legend-block"></div>
       <div id="legend-expressways" class="legend-block"></div>
       <div id="legend-bridges" class="legend-block"></div>
@@ -417,7 +439,7 @@
 
       data.features.forEach(function(feature, index) {
         var props = feature.properties || {};
-        var bridgeName = props['NAME OF BR'] || props.name || props.Name || props.NAME || props.title || `Bridge Location ${index + 1}`;
+        var bridgeName = props['NAME OF BRIDGE'] || props['NAME OF BR'] || props.name || props.Name || props.NAME || props.title || `Bridge Location ${index + 1}`;
 
         var option = document.createElement('option');
         option.value = index;
@@ -442,7 +464,7 @@
     var feature = window.bridgeFeatures[index];
     var coords = feature.geometry.coordinates;
     var props = feature.properties || {};
-    var name = props['NAME OF BR'] || props.name || props.Name || props.NAME || props.title || "Selected Location";
+    var name = props['NAME OF BRIDGE'] || props['NAME OF BR'] || props.name || props.Name || props.NAME || props.title || "Selected Location";
     showBridgeDetails(props);
 
     if (!Array.isArray(coords) || coords.length < 2) {
@@ -450,17 +472,13 @@
       return;
     }
 
-    var easting = parseFloat(coords[0]);
-    var northing = parseFloat(coords[1]);
+    var lng = parseFloat(coords[0]);
+    var lat = parseFloat(coords[1]);
 
-    if (isNaN(easting) || isNaN(northing)) {
+    if (isNaN(lng) || isNaN(lat) || lng < -180 || lng > 180 || lat < -90 || lat > 90) {
       alert("Invalid coordinates found for this feature.");
       return;
     }
-
-    var projectedPoint = proj4('EPSG:32651', 'EPSG:4326', [easting, northing]);
-    var lng = projectedPoint[0];
-    var lat = projectedPoint[1];
 
     var marker = L.marker([lat, lng]).bindPopup(`<strong>${name}</strong>`);
     activeProjectGroup.addLayer(marker);
@@ -559,7 +577,72 @@
     opacity: 0.7
   });
 
-  // Checkbox bindings
+  // --- FACILITY LAYERS LOGIC (Police, Fire, Barangay Halls) ---
+  
+  // Generic helper function to load facility GeoJSON layers dynamically
+  function setupFacilityLayer(checkboxId, filePath, fillColorHex, legendTitle) {
+    var layerGroup = L.layerGroup();
+    var isLoaded = false;
+
+    document.getElementById(checkboxId).addEventListener('change', e => {
+      if (e.target.checked) {
+        if (!isLoaded) {
+          fetch(filePath)
+            .then(response => {
+              if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+              return response.json();
+            })
+            .then(data => {
+              L.geoJSON(data, {
+                pointToLayer: function (feature, latlng) {
+                  return L.circleMarker(latlng, {
+                    radius: 6,
+                    fillColor: fillColorHex,
+                    color: '#ffffff',
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                  });
+                },
+                onEachFeature: function (feature, layer) {
+                  var props = feature.properties || {};
+                  var name = props.name || props.NAME || props.Name || legendTitle;
+                  var popupContent = `<strong>${name}</strong>`;
+                  Object.entries(props).forEach(([k, v]) => {
+                    if (k !== 'name' && k !== 'NAME' && k !== 'Name' && v) {
+                      popupContent += `<br>${k}: ${v}`;
+                    }
+                  });
+                  layer.bindPopup(popupContent);
+                }
+              }).addTo(layerGroup);
+
+              isLoaded = true;
+              map.addLayer(layerGroup);
+              updateLegendHtml(checkboxId, true, `<div class="legend-title"><span class="legend-swatch" style="background:${fillColorHex}; width:12px; height:12px; border-radius:50%; display:inline-block;"></span>${legendTitle}</div>`);
+            })
+            .catch(error => {
+              console.error(`Error loading ${filePath}:`, error);
+              alert(`Could not load ${filePath}.`);
+              e.target.checked = false;
+            });
+        } else {
+          map.addLayer(layerGroup);
+          updateLegendHtml(checkboxId, true, `<div class="legend-title"><span class="legend-swatch" style="background:${fillColorHex}; width:12px; height:12px; border-radius:50%; display:inline-block;"></span>${legendTitle}</div>`);
+        }
+      } else {
+        map.removeLayer(layerGroup);
+        updateLegendHtml(checkboxId, false, '');
+      }
+    });
+  }
+
+  // Initialize the three facility layers with distinct theme colors
+  setupFacilityLayer('police_stations', 'Facilities/Police Stations.geojson', '#3b82f6', 'Police Stations');   // Blue
+  setupFacilityLayer('fire_stations', 'Facilities/Fire Stations.geojson', '#ef4444', 'Fire Stations');       // Red
+  setupFacilityLayer('barangay_halls', 'Facilities/Barangay Halls.geojson', '#10b981', 'Barangay Halls');    // Green
+
+  // Checkbox bindings for other layers
   document.getElementById('activefault').addEventListener('change', e => {
     if (!activefaultLayer) {
       e.target.checked = false;
