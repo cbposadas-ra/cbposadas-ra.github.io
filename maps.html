@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GIS Mapping Workspace</title>
+
+  <!-- Leaflet core & plugins -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/esri-leaflet/dist/esri-leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.20/leaflet-maplibre-gl.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.2/proj4.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css" />
+  <script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.js"></script>
+
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background-color: #0b0f17;
+      color: #f8fafc;
+      font-family: system-ui, -apple-system, sans-serif;
+      overflow: hidden;
+    }
+
+    .gis-wrapper {
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      flex-direction: row;
+      overflow: hidden;
+    }
+
+    .gis-sidebar {
+      width: 280px;
+      min-width: 280px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      background: #111827;
+      border-right: 1px solid #1f2937;
+    }
+
+    .gis-sidebar-header {
+      padding: 1.25rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .gis-sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+    }
+
+    .gis-sidebar-content::-webkit-scrollbar,
+    .gis-legend-panel::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .gis-sidebar-content::-webkit-scrollbar-thumb,
+    .gis-legend-panel::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 4px;
+    }
+
+    .layer-category-card {
+      margin-bottom: 0.85rem;
+      background-color: #161e2e;
+      border: 1px solid #1f2937;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .layer-category-header {
+      padding: 0.65rem 0.85rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid #1f2937;
+      color: #94a3b8;
+      font-size: 0.785rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .layer-category-body {
+      padding: 0.75rem 0.85rem;
+    }
+
+    .form-check {
+      margin-bottom: 0.45rem;
+    }
+
+    .form-check:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-check-input {
+      background-color: #1f2937;
+      border-color: #374151;
+      cursor: pointer;
+    }
+
+    .form-check-input:checked {
+      background-color: #3b82f6;
+      border-color: #3b82f6;
+    }
+
+    .form-check-label {
+      font-size: 0.825rem;
+      color: #cbd5e1;
+      cursor: pointer;
+    }
+
+    .gis-map-canvas {
+      flex: 1;
+      height: 100%;
+      position: relative;
+      background: #0f172a;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      outline: none;
+    }
+
+    .leaflet-gl-layer {
+      z-index: 450 !important;
+      pointer-events: none;
+    }
+
+    .gis-legend-panel {
+      width: 260px;
+      min-width: 260px;
+      height: 100%;
+      padding: 1.25rem;
+      background: #111827;
+      border-left: 1px solid #1f2937;
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+
+    .gis-legend-panel h3 {
+      margin-top: 0;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .legend-block {
+      display: none;
+      margin-bottom: 0.75rem;
+      padding: 0.75rem;
+      border: 1px solid #1f2937;
+      border-radius: 8px;
+      background: #161e2e;
+      font-size: 0.785rem;
+      color: #cbd5e1;
+    }
+
+    .legend-block.active {
+      display: block;
+    }
+
+    .legend-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.4rem;
+      color: #f8fafc;
+      font-weight: 600;
+    }
+
+    .legend-swatch {
+      display: inline-block;
+      width: 1.5rem;
+      height: 0.2rem;
+      flex: 0 0 auto;
+      border-radius: 999px;
+    }
+
+    .legend-image {
+      width: 20px;
+      height: 20px;
+      margin-right: 0.4rem;
+      vertical-align: middle;
+    }
+
+    .bridge-details {
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .bridge-details h4 {
+      margin: 0 0 0.75rem;
+      font-size: 0.875rem;
+      font-weight: 700;
+    }
+
+    .bridge-details-placeholder {
+      color: #64748b;
+      font-size: 0.75rem;
+      line-height: 1.4;
+    }
+
+    .bridge-attribute-list {
+      margin: 0;
+    }
+
+    .bridge-attribute {
+      padding: 0.5rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.75rem;
+      line-height: 1.35;
+    }
+
+    .bridge-attribute:last-child {
+      border-bottom: 0;
+    }
+
+    .bridge-attribute dt {
+      margin-bottom: 0.15rem;
+      color: #94a3b8;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+
+    .bridge-attribute dd {
+      margin: 0;
+      color: #f8fafc;
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
+    }
+
+    .gis-export-wrapper {
+      padding: 1rem;
+      background: #111827;
+      border-top: 1px solid #1f2937;
+    }
+
+    .btn-export-snapshot {
+      border: none;
+      border-radius: 8px;
+      background-color: #3b82f6;
+      color: #fff;
+      font-size: 0.825rem;
+      font-weight: 600;
+      padding: 0.6rem;
+      width: 100%;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .btn-export-snapshot:hover {
+      background-color: #2563eb;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="gis-wrapper">
+    
+    <!-- Left Sidebar: Map Layers Control Panel -->
+    <div class="gis-sidebar">
+      <div class="gis-sidebar-header">
+        <span>Map Layers</span>
+      </div>
+
+      <div class="gis-sidebar-content">
+        
+        <!-- Project Locations Selector (5km Buffer) -->
+        <div class="layer-category-card">
+          <div class="layer-category-header">Bridge Location</div>
+          <div class="layer-category-body">
+            <select id="project-select" style="width: 100%; background-color: #1f2937; color: #cbd5e1; border: 1px solid #374151; border-radius: 6px; padding: 0.4rem; font-size: 0.825rem; cursor: pointer;">
+              <option value="">-- Loading Bridge Points... --</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Hazard Layers -->
+        <div class="layer-category-card">
+          <div class="layer-category-header">Hazard Layers</div>
+          <div class="layer-category-body">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="activefault">
+              <label class="form-check-label" for="activefault">Active Faults</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Climate & Environment Layers -->
+        <div class="layer-category-card">
+          <div class="layer-category-header">Climate & Environment</div>
+          <div class="layer-category-body">
+          </div>
+        </div>
+
+        <!-- Infrastructure Layers -->
+        <div class="layer-category-card">
+          <div class="layer-category-header">Infrastructure</div>
+          <div class="layer-category-body">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="roads">
+              <label class="form-check-label" for="roads">Roads</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="expressways">
+              <label class="form-check-label" for="expressways">Expressways</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="bridges">
+              <label class="form-check-label" for="bridges">Bridges</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="gis-export-wrapper">
+        <button class="btn-export-snapshot" onclick="exportMap()">Export Snapshot</button>
+      </div>
+    </div>
+
+    <!-- Center: Interactive Map Preview Canvas -->
+    <div class="gis-map-canvas">
+      <div id="map"></div>
+    </div>
+
+    <!-- Right Sidebar: Layer Legends -->
+    <div class="gis-legend-panel">
+      <h3>Active Legends</h3>
+      <div id="legend-activefault" class="legend-block"></div>
+      <div id="legend-roads" class="legend-block"></div>
+      <div id="legend-expressways" class="legend-block"></div>
+      <div id="legend-bridges" class="legend-block"></div>
+
+      <section class="bridge-details" aria-live="polite">
+        <h4>Selected Bridge</h4>
+        <div id="bridge-details-content" class="bridge-details-placeholder">Select a bridge to view its attributes.</div>
+      </section>
+    </div>
+
+  </div>
+
+<script>
+  proj4.defs('EPSG:32651', '+proj=utm +zone=51 +datum=WGS84 +units=m +no_defs');
+
+  // Initialize map centered on Metro Manila
+  var map = L.map('map', { zoomControl: false }).setView([14.5995, 120.9842], 11);
+
+  L.control.zoom({ position: 'topright' }).addTo(map);
+
+  // Esri World Dark Gray Base
+  L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 16,
+    attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'
+  }).addTo(map);
+
+  setTimeout(function() {
+    map.invalidateSize();
+  }, 100);
+
+  // --- BRIDGE POINTS GEOJSON LOADER & SELECTOR LOGIC ---
+  var activeProjectGroup = L.layerGroup().addTo(map);
+  var selectDropdown = document.getElementById('project-select');
+  var bridgeDetailsContent = document.getElementById('bridge-details-content');
+
+  function clearBridgeDetails() {
+    bridgeDetailsContent.className = 'bridge-details-placeholder';
+    bridgeDetailsContent.textContent = 'Select a bridge to view its attributes.';
+  }
+
+  function showBridgeDetails(properties) {
+    bridgeDetailsContent.className = 'bridge-attribute-list';
+    bridgeDetailsContent.replaceChildren();
+
+    Object.entries(properties).forEach(function([key, value]) {
+      if (value === null || value === undefined || value === '') return;
+
+      var attribute = document.createElement('dl');
+      attribute.className = 'bridge-attribute';
+
+      var label = document.createElement('dt');
+      label.textContent = key;
+
+      var detail = document.createElement('dd');
+      detail.textContent = String(value);
+
+      attribute.append(label, detail);
+      bridgeDetailsContent.appendChild(attribute);
+    });
+  }
+
+  fetch('bridge_points.geojson')
+    .then(response => {
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+      return response.json();
+    })
+    .then(data => {
+      window.bridgeFeatures = data.features;
+
+      if (!data.features || data.features.length === 0) {
+        selectDropdown.innerHTML = '<option value="">-- GeoJSON has no features --</option>';
+        return;
+      }
+
+      selectDropdown.innerHTML = '<option value="">-- Select a Bridge --</option>';
+
+      data.features.forEach(function(feature, index) {
+        var props = feature.properties || {};
+        var bridgeName = props['NAME OF BR'] || props.name || props.Name || props.NAME || props.title || `Bridge Location ${index + 1}`;
+
+        var option = document.createElement('option');
+        option.value = index;
+        option.textContent = bridgeName;
+        selectDropdown.appendChild(option);
+      });
+    })
+    .catch(error => {
+      console.error('Error loading bridge_points.geojson:', error);
+      selectDropdown.innerHTML = `<option value="">⚠️ Use Live Server (CORS Blocked)</option>`;
+    });
+
+  selectDropdown.addEventListener('change', function(e) {
+    var index = e.target.value;
+    activeProjectGroup.clearLayers();
+
+    if (index === "" || !window.bridgeFeatures) {
+      clearBridgeDetails();
+      return;
+    }
+
+    var feature = window.bridgeFeatures[index];
+    var coords = feature.geometry.coordinates;
+    var props = feature.properties || {};
+    var name = props['NAME OF BR'] || props.name || props.Name || props.NAME || props.title || "Selected Location";
+    showBridgeDetails(props);
+
+    if (!Array.isArray(coords) || coords.length < 2) {
+      alert("Invalid coordinates found for this feature.");
+      return;
+    }
+
+    var easting = parseFloat(coords[0]);
+    var northing = parseFloat(coords[1]);
+
+    if (isNaN(easting) || isNaN(northing)) {
+      alert("Invalid coordinates found for this feature.");
+      return;
+    }
+
+    var projectedPoint = proj4('EPSG:32651', 'EPSG:4326', [easting, northing]);
+    var lng = projectedPoint[0];
+    var lat = projectedPoint[1];
+
+    var marker = L.marker([lat, lng]).bindPopup(`<strong>${name}</strong>`);
+    activeProjectGroup.addLayer(marker);
+
+    var bufferCircle = L.circle([lat, lng], {
+      radius: 5000,
+      color: '#3b82f6',
+      fillColor: '#3b82f6',
+      fillOpacity: 0.2,
+      weight: 2
+    }).bindPopup(`<strong>5 km Radius Buffer</strong><br>${name}`);
+
+    activeProjectGroup.addLayer(bufferCircle);
+    map.fitBounds(bufferCircle.getBounds(), { padding: [50, 50] });
+    marker.openPopup();
+  });
+
+  var activefaultLayer = null;
+
+  function updateLegend(id, active, title, color, detail) {
+    var legend = document.getElementById(`legend-${id}`);
+    legend.classList.toggle('active', active);
+    legend.innerHTML = active
+      ? `<div class="legend-title"><span class="legend-swatch" style="background:${color}"></span>${title}</div><div>${detail}</div>`
+      : '';
+  }
+
+  function updateLegendHtml(id, active, html) {
+    var legend = document.getElementById(`legend-${id}`);
+    legend.classList.toggle('active', active);
+    legend.innerHTML = active ? html : '';
+  }
+
+  function faultLegendHtml(style) {
+    var colors = [...new Set(style.layers
+      .filter(layer => layer.type === 'line' && layer.paint && layer.paint['line-color'])
+      .map(layer => layer.paint['line-color']))];
+
+    return `<div class="legend-title">Active Faults</div>${colors.map((color, index) =>
+      `<div><span class="legend-swatch" style="background:${color}"></span>Fault class ${index + 1}</div>`
+    ).join('')}`;
+  }
+
+  var dpwhLegendHtml = {};
+
+  function loadDpwhLegend() {
+    fetch('https://apps2.dpwh.gov.ph/server/rest/services/DPWH_Public/RoadNetwork_RoadClassification/MapServer/legend?f=pjson')
+      .then(response => response.json())
+      .then(data => {
+        data.layers.forEach(layer => {
+          var legendItems = layer.legend || [];
+          dpwhLegendHtml[layer.layerId] = legendItems.map(item =>
+            `<div><img class="legend-image" src="data:${item.contentType};base64,${item.imageData}" alt="">${item.label || layer.layerName}</div>`
+          ).join('');
+
+          var checkboxId = layer.layerId === 0 ? 'expressways' : layer.layerId === 1 ? 'roads' : 'bridges';
+          var checkbox = document.getElementById(checkboxId);
+          if (checkbox && checkbox.checked) {
+            updateLegendHtml(checkboxId, true, dpwhLegendHtml[layer.layerId]);
+          }
+        });
+      })
+      .catch(error => console.error('Error loading DPWH legend:', error));
+  }
+
+  loadDpwhLegend();
+
+  fetch('Fault Information System/style.json')
+    .then(response => {
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+      return response.json();
+    })
+    .then(style => {
+      style.layers = style.layers.filter(layer => layer.id !== 'osm-background');
+      delete style.sources.osm;
+      activefaultLayer = L.maplibreGL({ style: style, opacity: 0.7 });
+      window.faultLegend = faultLegendHtml(style);
+    })
+    .catch(error => console.error('Error loading local fault style:', error));
+
+  var roadLayer = L.esri.dynamicMapLayer({
+    url: 'https://apps2.dpwh.gov.ph/server/rest/services/DPWH_Public/RoadNetwork_RoadClassification/MapServer',
+    layers: [1],  
+    opacity: 0.7
+  });
+
+  var expresswayLayer = L.esri.dynamicMapLayer({
+    url: 'https://apps2.dpwh.gov.ph/server/rest/services/DPWH_Public/RoadNetwork_RoadClassification/MapServer',
+    layers: [0],  
+    opacity: 0.7
+  });
+
+  var bridgeLayer = L.esri.dynamicMapLayer({
+    url: 'https://apps2.dpwh.gov.ph/server/rest/services/DPWH_Public/RoadNetwork_RoadClassification/MapServer',
+    layers: [2],  
+    opacity: 0.7
+  });
+
+  // Checkbox bindings
+  document.getElementById('activefault').addEventListener('change', e => {
+    if (!activefaultLayer) {
+      e.target.checked = false;
+      alert('The local fault layer is not ready. Start the MBTiles tile service on port 9000 and try again.');
+      return;
+    }
+    if (e.target.checked) { map.addLayer(activefaultLayer); } else { map.removeLayer(activefaultLayer); }
+    updateLegendHtml('activefault', e.target.checked, window.faultLegend || '<div class="legend-title">Active Faults</div>');
+  });
+
+  document.getElementById('roads').addEventListener('change', e => {
+    if (e.target.checked) { map.addLayer(roadLayer); } else { map.removeLayer(roadLayer); }
+    updateLegendHtml('roads', e.target.checked, dpwhLegendHtml[1] || '<div class="legend-title">Roads</div>');
+  });
+
+  document.getElementById('expressways').addEventListener('change', e => {
+    if (e.target.checked) { map.addLayer(expresswayLayer); } else { map.removeLayer(expresswayLayer); }
+    updateLegendHtml('expressways', e.target.checked, dpwhLegendHtml[0] || '<div class="legend-title">Expressways</div>');
+  });
+
+  document.getElementById('bridges').addEventListener('change', e => {
+    if (e.target.checked) { map.addLayer(bridgeLayer); } else { map.removeLayer(bridgeLayer); }
+    updateLegendHtml('bridges', e.target.checked, dpwhLegendHtml[2] || '<div class="legend-title">Bridges</div>');
+  });
+
+  function exportMap() {
+    alert("Snapshot export feature goes here!");
+  }
+</script>
+
+</body>
+</html>
