@@ -295,18 +295,6 @@
               <input class="form-check-input" type="checkbox" id="activefault">
               <label class="form-check-label" for="activefault">Active Faults</label>
             </div>
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" id="liquefaction">
-              <label class="form-check-label" for="liquefaction">Liquefactions</label>
-            </div>
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" id="flood">
-              <label class="form-check-label" for="flood">Flood Zones</label>
-            </div>
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" id="raininducedlandslide">
-              <label class="form-check-label" for="raininducedlandslide">Rain-Induced Landslides</label>
-            </div>
           </div>
         </div>
 
@@ -314,10 +302,6 @@
         <div class="layer-category-card">
           <div class="layer-category-header">Climate & Environment</div>
           <div class="layer-category-body">
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" id="climate_type">
-              <label class="form-check-label" for="climate_type">Climate Type</label>
-            </div>
           </div>
         </div>
 
@@ -355,10 +339,6 @@
     <div class="gis-legend-panel">
       <h3>Active Legends</h3>
       <div id="legend-activefault" class="legend-block"></div>
-      <div id="legend-liquefaction" class="legend-block"></div>
-      <div id="legend-flood" class="legend-block"></div>
-      <div id="legend-raininducedlandslide" class="legend-block"></div>
-      <div id="legend-climate_type" class="legend-block"></div>
       <div id="legend-roads" class="legend-block"></div>
       <div id="legend-expressways" class="legend-block"></div>
       <div id="legend-bridges" class="legend-block"></div>
@@ -561,26 +541,6 @@
     })
     .catch(error => console.error('Error loading local fault style:', error));
 
-  var liquefactionLayer = L.esri.dynamicMapLayer({
-    url: 'https://ulap-hazards.georisk.gov.ph/arcgis/rest/services/PHIVOLCSPublic/Liquefaction/MapServer',
-    opacity: 0.7
-  });
-
-  var floodLayer = L.esri.dynamicMapLayer({
-    url: 'https://ulap-hazards.georisk.gov.ph/arcgis/rest/services/MGBPublic/Flood/MapServer',
-    opacity: 0.7
-  });
-
-  var rainInducedLandslideLayer = L.esri.dynamicMapLayer({
-    url: 'https://ulap-hazards.georisk.gov.ph/arcgis/rest/services/MGBPublic/RainInducedLandslide/MapServer',
-    opacity: 0.7
-  });
-
-  var climatetypeLayer = L.esri.dynamicMapLayer({
-    url: 'https://ulap-hazards.georisk.gov.ph/arcgis/rest/services/PAGASAPublic/Climate_Type/MapServer',
-    opacity: 0.7
-  });
-
   var roadLayer = L.esri.dynamicMapLayer({
     url: 'https://apps2.dpwh.gov.ph/server/rest/services/DPWH_Public/RoadNetwork_RoadClassification/MapServer',
     layers: [1],  
@@ -608,26 +568,6 @@
     }
     if (e.target.checked) { map.addLayer(activefaultLayer); } else { map.removeLayer(activefaultLayer); }
     updateLegendHtml('activefault', e.target.checked, window.faultLegend || '<div class="legend-title">Active Faults</div>');
-  });
-
-  document.getElementById('liquefaction').addEventListener('change', e => {
-    if (e.target.checked) { map.addLayer(liquefactionLayer); } else { map.removeLayer(liquefactionLayer); }
-    updateLegend('liquefaction', e.target.checked, 'Liquefactions', '#f59e0b', 'Hazard layer');
-  });
-
-  document.getElementById('flood').addEventListener('change', e => {
-    if (e.target.checked) { map.addLayer(floodLayer); } else { map.removeLayer(floodLayer); }
-    updateLegend('flood', e.target.checked, 'Flood Zones', '#38bdf8', 'Hazard layer');
-  });
-
-  document.getElementById('raininducedlandslide').addEventListener('change', e => {
-    if (e.target.checked) { map.addLayer(rainInducedLandslideLayer); } else { map.removeLayer(rainInducedLandslideLayer); }
-    updateLegend('raininducedlandslide', e.target.checked, 'Rain-Induced Landslides', '#ef4444', 'Hazard layer');
-  });
-
-  document.getElementById('climate_type').addEventListener('change', e => {
-    if (e.target.checked) { map.addLayer(climatetypeLayer); } else { map.removeLayer(climatetypeLayer); }
-    updateLegend('climate_type', e.target.checked, 'Climate Type', '#22c55e', 'Climate and environment layer');
   });
 
   document.getElementById('roads').addEventListener('change', e => {
