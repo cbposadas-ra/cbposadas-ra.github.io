@@ -408,6 +408,7 @@
               <option value="esriDark">Esri Dark Canvas</option>
               <option value="esriStreets">Esri World Street Map</option>
               <option value="topo">OpenTopoMap</option>
+              <option value="osmLight">OSM Light Gray (Positron)</option>
             </select>
             <div id="basemap-load-status" class="layer-load-status" data-state="loading" role="status" aria-live="polite">Loading basemap...</div>
           </div>
@@ -640,6 +641,10 @@
     topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
       maxZoom: 17,
       attribution: 'Map data: OpenStreetMap contributors, SRTM | Style: OpenTopoMap'
+    }),
+    osmLight: L.maplibreGL({
+      style: 'https://tiles.openfreemap.org/styles/positron',
+      attribution: '&copy; OpenMapTiles | Data &copy; OpenStreetMap contributors'
     })
   };
 
