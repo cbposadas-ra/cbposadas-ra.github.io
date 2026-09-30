@@ -727,9 +727,9 @@
     }
   });
 
-  function clearBridgeDetails() {
+  function clearBridgeDetails(message) {
     bridgeDetailsContent.className = 'bridge-details-placeholder';
-    bridgeDetailsContent.textContent = 'Select a bridge to view its attributes.';
+    bridgeDetailsContent.textContent = message || 'Select a bridge to view its attributes.';
   }
 
   function showBridgeDetails(properties) {
@@ -763,6 +763,10 @@
         return;
       }
       selectDropdown.innerHTML = '<option value="">-- Select a Bridge --</option>';
+      var allBridgesOption = document.createElement('option');
+      allBridgesOption.value = 'all';
+      allBridgesOption.textContent = 'Show All Bridges';
+      selectDropdown.appendChild(allBridgesOption);
       data.features.forEach(function(feature, index) {
         var props = feature.properties || {};
         var bridgeName = props['NAME OF BRIDGE'] || props['NAME OF BR'] || props.name || props.Name || props.NAME || props.title || `Bridge Location ${index + 1}`;
@@ -786,19 +790,55 @@
     var index = e.target.value;
     activeProjectGroup.clearLayers();
     clearFloodLayer();
+    clearLiquefactionLayer();
+    window.selectedBridgeCoords = null;
+    selectedFloodBridgeId = null;
     if (!document.getElementById('flood_5year').checked) {
       setLayerLoadStatus('flood_5year-load-status', 'idle', 'Off');
     }
+    if (!document.getElementById('liquefaction').checked) {
+      setLayerLoadStatus('liquefaction-load-status', 'idle', 'Off');
+    }
 
     if (index === "" || !window.bridgeFeatures) {
-      window.selectedBridgeCoords = null;
-      selectedFloodBridgeId = null;
       map.setMaxBounds(null); 
       clearBridgeDetails();
-      var floodCheckbox = document.getElementById('flood_5year');
-      if (floodCheckbox.checked) {
-        floodCheckbox.checked = false;
-        setLayerLoadStatus('flood_5year-load-status', 'idle', 'Off');
+      clearBridgeDependentLayerSelections();
+      refreshAllActiveFacilities();
+      return;
+    }
+
+    if (index === 'all') {
+      map.setMaxBounds(null);
+      clearBridgeDetails(`Showing all ${window.bridgeFeatures.length} bridge locations. Select one bridge to load location-specific layers.`);
+      clearBridgeDependentLayerSelections();
+
+      var allBridgeLayer = L.geoJSON({
+        type: 'FeatureCollection',
+        features: window.bridgeFeatures
+      }, {
+        pointToLayer: function(feature, latlng) {
+          return L.circleMarker(latlng, {
+            radius: 5,
+            color: '#f8fafc',
+            weight: 1,
+            fillColor: '#3b82f6',
+            fillOpacity: 0.9
+          });
+        },
+        onEachFeature: function(feature, layer) {
+          var properties = feature.properties || {};
+          var bridgeName = properties['NAME OF BRIDGE'] || properties['NAME OF BR'] || properties.name || properties.Name || properties.NAME || 'Bridge';
+          var popup = document.createElement('strong');
+          popup.textContent = `${bridgeName} (SPI Bridge ID ${properties.SPI_BRIDGE_ID ?? 'unknown'})`;
+          layer.bindPopup(popup);
+        }
+      });
+      activeProjectGroup.addLayer(allBridgeLayer);
+      var allBridgeBounds = allBridgeLayer.getBounds();
+      if (allBridgeBounds.isValid()) {
+        map.stop();
+        map.fitBounds(allBridgeBounds, { padding: [30, 30], maxZoom: 8, animate: true, duration: 0.8 });
       }
       refreshAllActiveFacilities();
       return;
@@ -838,10 +878,31 @@
     marker.openPopup();
 
     refreshAllActiveFacilities();
+    if (document.getElementById('liquefaction').checked) {
+      loadLiquefactionForSelectedBridge();
+    }
     if (document.getElementById('flood_5year').checked) {
       loadSelectedFloodLayer();
     }
   });
+
+  function clearBridgeDependentLayerSelections() {
+    var floodCheckbox = document.getElementById('flood_5year');
+    floodCheckbox.checked = false;
+    clearFloodLayer();
+    setLayerLoadStatus('flood_5year-load-status', 'idle', 'Off');
+
+    var liquefactionCheckbox = document.getElementById('liquefaction');
+    liquefactionCheckbox.checked = false;
+    clearLiquefactionLayer();
+    setLayerLoadStatus('liquefaction-load-status', 'idle', 'Off');
+  }
+
+  function clearLiquefactionLayer() {
+    liquefactionLayer.clearLayers();
+    if (map.hasLayer(liquefactionLayer)) map.removeLayer(liquefactionLayer);
+    updateLegendHtml('liquefaction', false, '');
+  }
 
   function clearFloodLayer() {
     floodLayer.clearLayers();
@@ -1221,7 +1282,7 @@
     '05': { label: 'Least Susceptible', color: '#ffff00' },
     '01': { label: 'Generally Susceptible', color: '#ffcc00' }
   };
-  var liquefactionData = null;
+  var liquefactionDataCache = {};
   var liquefactionLayer = L.geoJSON(null, {
     style: function(feature) {
       var properties = feature.properties || {};
@@ -1253,16 +1314,28 @@
 
   document.getElementById('liquefaction').addEventListener('change', function(event) {
     if (!event.target.checked) {
-      map.removeLayer(liquefactionLayer);
-      updateLegendHtml('liquefaction', false, '');
+      clearLiquefactionLayer();
       setLayerLoadStatus('liquefaction-load-status', 'idle', 'Off');
       return;
     }
 
-    setLayerLoadStatus('liquefaction-load-status', 'loading', 'Loading Liquefaction...');
+    loadLiquefactionForSelectedBridge();
+  });
 
+  function loadLiquefactionForSelectedBridge() {
+    var checkbox = document.getElementById('liquefaction');
+    if (!checkbox.checked) return;
+    if (!window.selectedBridgeCoords || selectedFloodBridgeId === null || selectedFloodBridgeId === undefined || selectedFloodBridgeId === '') {
+      alert('Please select one Bridge Location first.');
+      checkbox.checked = false;
+      clearLiquefactionLayer();
+      setLayerLoadStatus('liquefaction-load-status', 'error', 'Select one bridge first');
+      return;
+    }
+
+    var bridgeId = String(selectedFloodBridgeId);
     var showLiquefaction = function(data) {
-      if (!document.getElementById('liquefaction').checked) return;
+      if (!checkbox.checked || String(selectedFloodBridgeId) !== bridgeId) return;
       liquefactionLayer.clearLayers();
       liquefactionLayer.addData(data);
       map.addLayer(liquefactionLayer);
@@ -1271,7 +1344,7 @@
       setLayerLoadStatus(
         'liquefaction-load-status',
         featureCount ? 'loaded' : 'empty',
-        featureCount ? `Loaded: ${featureCount} features` : 'Loaded: no features'
+        featureCount ? `Loaded: ${featureCount} features within 5 km` : 'Loaded: no features within 5 km'
       );
 
       var classCounts = {};
@@ -1288,12 +1361,14 @@
       updateLegendHtml('liquefaction', true, legendHtml);
     };
 
-    if (liquefactionData) {
-      showLiquefaction(liquefactionData);
+    setLayerLoadStatus('liquefaction-load-status', 'loading', `Loading liquefaction within 5 km of Bridge ID ${bridgeId}...`);
+    if (liquefactionDataCache[bridgeId]) {
+      showLiquefaction(liquefactionDataCache[bridgeId]);
       return;
     }
 
-    fetch('Hazard/Liquefaction.geojson')
+    var filePath = `Hazard/Liquefaction 5km/SPI_Bridge_${encodeURIComponent(bridgeId)}.geojson`;
+    fetch(filePath)
       .then(function(response) {
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         return response.json();
@@ -1302,15 +1377,18 @@
         if (!data.features || !Array.isArray(data.features)) {
           throw new Error('GeoJSON does not contain a features array.');
         }
-        liquefactionData = data;
+        liquefactionDataCache[bridgeId] = data;
         showLiquefaction(data);
       })
       .catch(function(error) {
-        console.error('Error loading Hazard/Liquefaction.geojson:', error);
-        event.target.checked = false;
+        if (!checkbox.checked || String(selectedFloodBridgeId) !== bridgeId) return;
+        console.error(`Error loading ${filePath}:`, error);
+        alert(`Could not load liquefaction data for Bridge ID ${bridgeId}.`);
+        checkbox.checked = false;
+        clearLiquefactionLayer();
         setLayerLoadStatus('liquefaction-load-status', 'error', 'Failed to load');
       });
-  });
+  }
 
   var nipasGeoJsonData = null;
   var nipasLayer = L.geoJSON(null, {
