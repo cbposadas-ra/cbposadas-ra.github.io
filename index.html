@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PBBM 350 Bridges</title>
+
+  <!-- Leaflet core & plugins -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/esri-leaflet/dist/esri-leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.20/leaflet-maplibre-gl.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.2/proj4.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-measure/dist/leaflet-measure.css" />
+  <script src="https://unpkg.com/leaflet-measure/dist/leaflet-measure.js"></script>
+
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background-color: #0b0f17;
+      color: #f8fafc;
+      font-family: system-ui, -apple-system, sans-serif;
+      overflow: hidden;
+    }
+
+    .gis-wrapper {
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      flex-direction: row;
+      overflow: hidden;
+    }
+
+    .gis-sidebar {
+      width: 300px;
+      min-width: 300px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      background: #111827;
+      border-right: 1px solid #1f2937;
+    }
+
+    .gis-sidebar-header {
+      padding: 1.25rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .gis-sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+    }
+
+    .gis-sidebar-content::-webkit-scrollbar,
+    .gis-legend-panel::-webkit-scrollbar,
+    .leaflet-control-measure .leaflet-control-measure-interaction::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .gis-sidebar-content::-webkit-scrollbar-thumb,
+    .gis-legend-panel::-webkit-scrollbar-thumb,
+    .leaflet-control-measure .leaflet-control-measure-interaction::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 4px;
+    }
+
+    .layer-category-card {
+      margin-bottom: 0.85rem;
+      background-color: #161e2e;
+      border: 1px solid #1f2937;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .layer-category-header {
+      padding: 0.65rem 0.85rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid #1f2937;
+      color: #94a3b8;
+      font-size: 0.785rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .layer-category-body {
+      padding: 0.75rem 0.85rem;
+    }
+
+    .sub-category-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #38bdf8;
+      margin: 0.6rem 0 0.3rem 0;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .sub-category-title:first-child {
+      margin-top: 0;
+    }
+
+    .form-check {
+      margin-bottom: 0.4rem;
+      padding-left: 0.5rem;
+    }
+
+    .form-check:last-child {
+      margin-bottom: 0.2rem;
+    }
+
+    .form-check-input {
+      background-color: #1f2937;
+      border-color: #374151;
+      cursor: pointer;
+    }
+
+    .form-check-input:checked {
+      background-color: #3b82f6;
+      border-color: #3b82f6;
+    }
+
+    .form-check-label {
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      cursor: pointer;
+    }
+
+    .layer-load-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin: 0.15rem 0 0.35rem 1.85rem;
+      color: #94a3b8;
+      font-size: 0.7rem;
+      line-height: 1.2;
+    }
+
+    .layer-load-status[data-state="loading"]::before {
+      width: 0.7rem;
+      height: 0.7rem;
+      border: 2px solid #475569;
+      border-top-color: #38bdf8;
+      border-radius: 50%;
+      content: "";
+      animation: layer-load-spin 0.8s linear infinite;
+    }
+
+    .layer-load-status[data-state="loaded"] {
+      color: #4ade80;
+    }
+
+    .layer-load-status[data-state="empty"],
+    .layer-load-status[data-state="error"] {
+      color: #fca5a5;
+    }
+
+    @keyframes layer-load-spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .gis-map-canvas {
+      flex: 1;
+      height: 100%;
+      position: relative;
+      background: #0f172a;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      outline: none;
+    }
+
+    /* --- ENHANCED HOVER & CLICK LEAFLET MEASURE STYLING --- */
+    .leaflet-control-measure {
+      background: #161e2e !important;
+      color: #f8fafc !important;
+      border: 1px solid #1f2937 !important;
+      border-radius: 8px !important;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4) !important;
+    }
+    
+    .leaflet-control-measure a.leaflet-control-measure-toggle {
+      background-color: #161e2e !important;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 12h20M2 4h20M2 20h20M6 4v16M10 4v8M14 4v12M18 4v8'/%3E%3C/svg%3E") !important;
+      background-size: 18px 18px !important;
+      background-repeat: no-repeat !important;
+      background-position: center !important;
+      border-radius: 8px;
+      width: 36px;
+      height: 36px;
+      text-indent: -9999px;
+      cursor: pointer;
+    }
+    
+    .leaflet-control-measure a.leaflet-control-measure-toggle:hover {
+      background-color: #1f2937 !important;
+    }
+
+    /* Hover State expansion logic for quick tool opening */
+    .leaflet-control-measure:hover .leaflet-control-measure-interaction,
+    .leaflet-control-measure.js-open .leaflet-control-measure-interaction {
+      display: block !important;
+    }
+
+    .leaflet-control-measure .leaflet-control-measure-interaction {
+      display: none;
+      background: #161e2e !important;
+      color: #f8fafc !important;
+      max-height: 320px;
+      width: 240px !important;
+      overflow-y: auto;
+      padding: 12px;
+      right: 44px !important;
+      left: auto !important;
+      top: 0 !important;
+      position: absolute !important;
+      box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.7);
+      border-radius: 8px;
+      border: 1px solid #374151;
+      z-index: 1000;
+    }
+
+    .leaflet-control-measure p, 
+    .leaflet-control-measure .tasks, 
+    .leaflet-control-measure .group,
+    .leaflet-control-measure .leaflet-control-measure-result {
+      color: #cbd5e1 !important;
+    }
+    .leaflet-control-measure .constrained {
+      color: #94a3b8 !important;
+    }
+    .leaflet-measure-resultpopup {
+      color: #111827 !important;
+    }
+    .leaflet-control-measure label {
+      color: #f8fafc !important;
+    }
+    .leaflet-control-measure input, 
+    .leaflet-control-measure select {
+      background-color: #1f2937 !important;
+      color: #f8fafc !important;
+      border: 1px solid #374151 !important;
+      border-radius: 4px;
+      padding: 4px 6px;
+    }
+    .leaflet-control-measure .start, 
+    .leaflet-control-measure .cancel, 
+    .leaflet-control-measure .finish {
+      background-color: #3b82f6 !important;
+      color: #ffffff !important;
+      border: none !important;
+      border-radius: 4px !important;
+      padding: 5px 10px !important;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .leaflet-control-measure .cancel {
+      background-color: #ef4444 !important;
+    }
+
+    .gis-legend-panel {
+      width: 280px;
+      min-width: 280px;
+      height: 100%;
+      padding: 1.25rem;
+      background: #111827;
+      border-left: 1px solid #1f2937;
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+
+    .gis-legend-panel h3 {
+      margin-top: 0;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .legend-block {
+      display: none;
+      margin-bottom: 0.75rem;
+      padding: 0.75rem;
+      border: 1px solid #1f2937;
+      border-radius: 8px;
+      background: #161e2e;
+      font-size: 0.785rem;
+      color: #cbd5e1;
+    }
+
+    .legend-block.active {
+      display: block;
+    }
+
+    .legend-title {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      margin-bottom: 0.4rem;
+      color: #f8fafc;
+      font-weight: 600;
+    }
+
+    .legend-image {
+      width: 20px;
+      height: 20px;
+      margin-right: 0.4rem;
+      vertical-align: middle;
+    }
+
+    .bridge-details {
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .bridge-details h4 {
+      margin: 0 0 0.75rem;
+      font-size: 0.875rem;
+      font-weight: 700;
+    }
+
+    .bridge-details-placeholder {
+      color: #64748b;
+      font-size: 0.75rem;
+      line-height: 1.4;
+    }
+
+    .bridge-attribute-list {
+      margin: 0;
+    }
+
+    .bridge-attribute {
+      padding: 0.5rem 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.75rem;
+      line-height: 1.35;
+    }
+
+    .bridge-attribute:last-child {
+      border-bottom: 0;
+    }
+
+    .bridge-attribute dt {
+      margin-bottom: 0.15rem;
+      color: #94a3b8;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+
+    .bridge-attribute dd {
+      margin: 0;
+      color: #f8fafc;
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
+    }
+
+    .gis-export-wrapper {
+      padding: 1rem;
+      background: #111827;
+      border-top: 1px solid #1f2937;
+    }
+
+    .btn-export-snapshot {
+      border: none;
+      border-radius: 8px;
+      background-color: #3b82f6;
+      color: #fff;
+      font-size: 0.825rem;
+      font-weight: 600;
+      padding: 0.6rem;
+      width: 100%;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .btn-export-snapshot:hover {
+      background-color: #2563eb;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="gis-wrapper">
+    
+    <!-- Left Sidebar: Map Layers Control Panel -->
+    <div class="gis-sidebar">
+      <div class="gis-sidebar-header">
+        <span>Pang-Agraryong Tulay Para sa Bagong Bayanihan ng mga Magsasaka (PBBM) Project</span>
+      </div>
+
+      <div class="gis-sidebar-content">
+        
+        <!-- Basemap Selector -->
+        <div class="layer-category-card">
+          <div class="layer-category-header">Basemap Style</div>
+          <div class="layer-category-body">
+            <select id="basemap-select" style="width: 100%; background-color: #1f2937; color: #cbd5e1; border: 1px solid #374151; border-radius: 6px; padding: 0.4rem; font-size: 0.825rem; cursor: pointer;">
+              <option value="esriDark">Esri Dark Canvas</option>
+              <option value="esriStreets">Esri World Street Map</option>
+              <option value="topo">OpenTopoMap</option>
+            </select>
+            <div id="basemap-load-status" class="layer-load-status" data-state="loading" role="status" aria-live="polite">Loading basemap...</div>
+          </div>
+        </div>
+
+        <!-- Project Locations Selector -->
+        <div class="layer-category-card">
+          <div class="layer-category-header">Bridge Location</div>
+          <div class="layer-category-body">
+            <select id="project-select" style="width: 100%; background-color: #1f2937; color: #cbd5e1; border: 1px solid #374151; border-radius: 6px; padding: 0.4rem; font-size: 0.825rem; cursor: pointer;">
+              <option value="">-- Select a Bridge First --</option>
+            </select>
+            <div id="bridge-data-load-status" class="layer-load-status" data-state="loading" role="status" aria-live="polite">Loading bridge locations...</div>
+          </div>
+        </div>
+
+        <!-- Hazard Layers -->
+        <div class="layer-category-card">
+          <div class="layer-category-header">Hazard Layers</div>
+          <div class="layer-category-body">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="liquefaction">
+              <label class="form-check-label" for="liquefaction">Liquefaction</label>
+            </div>
+            <div id="liquefaction-load-status" class="layer-load-status" data-state="idle" role="status" aria-live="polite">Off</div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="flood_5year">
+              <label class="form-check-label" for="flood_5year">5-Year Flood Inundation</label>
+            </div>
+            <div id="flood_5year-load-status" class="layer-load-status" data-state="idle" role="status" aria-live="polite">Off</div>
+          </div>
+        </div>
+
+        <!-- Environmental and Social Layers -->
+        <div class="layer-category-card">
+          <div class="layer-category-header">Environmental and Social Layers</div>
+          <div class="layer-category-body">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="nipas">
+              <label class="form-check-label" for="nipas">National Integrated Protected Areas System (NIPAS)</label>
+            </div>
+            <div id="nipas-load-status" class="layer-load-status" data-state="idle" role="status" aria-live="polite">Off</div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="poverty_incidence">
+              <label class="form-check-label" for="poverty_incidence">Poverty Incidence</label>
+            </div>
+            <div id="poverty_incidence-load-status" class="layer-load-status" data-state="idle" role="status" aria-live="polite">Off</div>
+          </div>
+        </div>
+
+        <!-- Facilities Subfolder Tree -->
+        <div class="layer-category-card">
+          <div class="layer-category-header">Facilities (10km Local Zone)</div>
+          <div class="layer-category-body">
+            
+            <!-- Educational Facilities -->
+            <div class="sub-category-title">Educational Facilities</div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="deped_elementary">
+              <label class="form-check-label" for="deped_elementary">DEPED Elementary Schools</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="deped_secondary">
+              <label class="form-check-label" for="deped_secondary">DEPED Secondary Schools</label>
+            </div>
+
+            <!-- GeoAgri Facilities -->
+            <div class="sub-category-title">GeoAgri Facilities</div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="abemis_coffee">
+              <label class="form-check-label" for="abemis_coffee">ABEMIS Coffee & Cacao</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="bafe_agri">
+              <label class="form-check-label" for="bafe_agri">BAFE Agri Processing Centers</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="bafe_markets">
+              <label class="form-check-label" for="bafe_markets">BAFE Public Markets</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="bafe_rice">
+              <label class="form-check-label" for="bafe_rice">BAFE Rice Processing Centers</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="nfa_warehouses">
+              <label class="form-check-label" for="nfa_warehouses">NFA Warehouses</label>
+            </div>
+
+            <!-- Health Facilities -->
+            <div class="sub-category-title">Health Facilities</div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="doh_gov_hospitals">
+              <label class="form-check-label" for="doh_gov_hospitals">DOH Government Hospitals</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="doh_pvt_hospitals">
+              <label class="form-check-label" for="doh_pvt_hospitals">DOH Private Hospitals</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="doh_vax">
+              <label class="form-check-label" for="doh_vax">DOH Vaccination Facilities</label>
+            </div>
+
+            <!-- OSM Extracted Facilities -->
+            <div class="sub-category-title">OSM Extracted Facilities</div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="police_stations">
+              <label class="form-check-label" for="police_stations">Police Stations</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="fire_stations">
+              <label class="form-check-label" for="fire_stations">Fire Stations</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="barangay_halls">
+              <label class="form-check-label" for="barangay_halls">Barangay Halls</label>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Infrastructure Layers -->
+        <div class="layer-category-card">
+          <div class="layer-category-header">Infrastructure</div>
+          <div class="layer-category-body">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="roads">
+              <label class="form-check-label" for="roads">Roads</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="expressways">
+              <label class="form-check-label" for="expressways">Expressways</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="bridges">
+              <label class="form-check-label" for="bridges">Bridges</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="gis-export-wrapper">
+        <button class="btn-export-snapshot" onclick="exportMap()">Export Snapshot</button>
+      </div>
+    </div>
+
+    <!-- Center: Interactive Map Preview Canvas -->
+    <div class="gis-map-canvas">
+      <div id="map"></div>
+    </div>
+
+    <!-- Right Sidebar: Layer Legends -->
+    <div class="gis-legend-panel">
+      <h3>Active Legends</h3>
+      <div id="legend-liquefaction" class="legend-block"></div>
+      <div id="legend-flood_5year" class="legend-block"></div>
+      <div id="legend-nipas" class="legend-block"></div>
+      <div id="legend-poverty_incidence" class="legend-block"></div>
+      <!-- Educational -->
+      <div id="legend-deped_elementary" class="legend-block"></div>
+      <div id="legend-deped_secondary" class="legend-block"></div>
+      <!-- GeoAgri -->
+      <div id="legend-abemis_coffee" class="legend-block"></div>
+      <div id="legend-bafe_agri" class="legend-block"></div>
+      <div id="legend-bafe_markets" class="legend-block"></div>
+      <div id="legend-bafe_rice" class="legend-block"></div>
+      <div id="legend-nfa_warehouses" class="legend-block"></div>
+      <!-- Health -->
+      <div id="legend-doh_gov_hospitals" class="legend-block"></div>
+      <div id="legend-doh_pvt_hospitals" class="legend-block"></div>
+      <div id="legend-doh_vax" class="legend-block"></div>
+      <!-- OSM Extracted -->
+      <div id="legend-police_stations" class="legend-block"></div>
+      <div id="legend-fire_stations" class="legend-block"></div>
+      <div id="legend-barangay_halls" class="legend-block"></div>
+      <!-- Infrastructure -->
+      <div id="legend-roads" class="legend-block"></div>
+      <div id="legend-expressways" class="legend-block"></div>
+      <div id="legend-bridges" class="legend-block"></div>
+
+      <section class="bridge-details" aria-live="polite">
+        <h4>Selected Bridge</h4>
+        <div id="bridge-details-content" class="bridge-details-placeholder">Select a bridge to view its attributes.</div>
+      </section>
+    </div>
+
+  </div>
+
+<script>
+  proj4.defs('EPSG:32651', '+proj=utm +zone=51 +datum=WGS84 +units=m +no_defs');
+
+  var map = L.map('map', { zoomControl: false }).setView([14.5995, 120.9842], 11);
+  L.control.zoom({ position: 'topright' }).addTo(map);
+
+  // Measurement Ruler Control
+  var measureControl = L.control.measure({
+    position: 'topright',
+    primaryLengthUnit: 'kilometers',
+    secondaryLengthUnit: 'miles',
+    primaryAreaUnit: 'sqmeters',
+    secondaryAreaUnit: 'acres',
+    activeColor: '#3b82f6',
+    completedColor: '#2563eb'
+  }).addTo(map);
+
+  // Bind hover and persistent click toggle handlers
+  setTimeout(() => {
+    var controlContainer = document.querySelector('.leaflet-control-measure');
+    if (controlContainer) {
+      controlContainer.addEventListener('click', function(e) {
+        e.stopPropagation();
+        this.classList.toggle('js-open');
+      });
+      document.addEventListener('click', function() {
+        controlContainer.classList.remove('js-open');
+      });
+    }
+  }, 300);
+
+  var basemaps = {
+    esriDark: L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 18,
+      attribution: 'Tiles &copy; Esri'
+    }),
+    esriStreets: L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 18,
+      attribution: 'Tiles &copy; Esri'
+    }),
+    topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+      maxZoom: 17,
+      attribution: 'Map data: OpenStreetMap contributors, SRTM | Style: OpenTopoMap'
+    })
+  };
+
+  var currentBaseMap = basemaps.esriDark;
+
+  function trackBasemapLayer(layer, label) {
+    layer.on('loading', function() {
+      if (layer !== currentBaseMap) return;
+      layer._loadErrorCount = 0;
+      setLayerLoadStatus('basemap-load-status', 'loading', `Loading ${label}...`);
+    });
+    layer.on('tileerror', function() {
+      if (layer === currentBaseMap) layer._loadErrorCount = (layer._loadErrorCount || 0) + 1;
+    });
+    layer.on('load', function() {
+      if (layer !== currentBaseMap) return;
+      var errors = layer._loadErrorCount || 0;
+      setLayerLoadStatus(
+        'basemap-load-status',
+        errors ? 'error' : 'loaded',
+        errors ? `Loaded with ${errors} tile errors` : `${label} loaded`
+      );
+    });
+  }
+
+  Object.keys(basemaps).forEach(function(key) {
+    var label = document.querySelector(`#basemap-select option[value="${key}"]`).textContent;
+    trackBasemapLayer(basemaps[key], label);
+  });
+  map.addLayer(currentBaseMap);
+
+  document.getElementById('basemap-select').addEventListener('change', function(e) {
+    var selected = e.target.value;
+    if (basemaps[selected]) {
+      map.removeLayer(currentBaseMap);
+      currentBaseMap = basemaps[selected];
+      setLayerLoadStatus('basemap-load-status', 'loading', `Loading ${e.target.options[e.target.selectedIndex].text}...`);
+      map.addLayer(currentBaseMap);
+    }
+  });
+
+  setTimeout(function() { map.invalidateSize(); }, 100);
+
+  var activeProjectGroup = L.layerGroup().addTo(map);
+  var selectDropdown = document.getElementById('project-select');
+  var bridgeDetailsContent = document.getElementById('bridge-details-content');
+
+  window.selectedBridgeCoords = null; 
+  window.facilityCache = {};
+  window.activeFacilityLayers = {}; 
+  var selectedFloodBridgeId = null;
+  var floodDataCache = {};
+  var floodRiskColors = {
+    Low: '#22c55e',
+    Medium: '#f59e0b',
+    High: '#ef4444'
+  };
+  var floodLayer = L.geoJSON(null, {
+    style: function(feature) {
+      var riskLevel = (feature.properties || {})['Risk Level'];
+      var color = floodRiskColors[riskLevel] || '#64748b';
+      return {
+        color: color,
+        weight: 1,
+        opacity: 0.9,
+        fillColor: color,
+        fillOpacity: 0.45
+      };
+    },
+    onEachFeature: function(feature, layer) {
+      var properties = feature.properties || {};
+      var popup = document.createElement('div');
+      var title = document.createElement('strong');
+      title.textContent = '5-Year Flood Inundation';
+      popup.appendChild(title);
+      var risk = document.createElement('div');
+      risk.textContent = `Risk Level: ${properties['Risk Level'] || 'Unknown'}`;
+      popup.appendChild(risk);
+      layer.bindPopup(popup);
+    }
+  });
+
+  function clearBridgeDetails() {
+    bridgeDetailsContent.className = 'bridge-details-placeholder';
+    bridgeDetailsContent.textContent = 'Select a bridge to view its attributes.';
+  }
+
+  function showBridgeDetails(properties) {
+    bridgeDetailsContent.className = 'bridge-attribute-list';
+    bridgeDetailsContent.replaceChildren();
+
+    Object.entries(properties).forEach(function([key, value]) {
+      if (value === null || value === undefined || value === '') return;
+      var attribute = document.createElement('dl');
+      attribute.className = 'bridge-attribute';
+      var label = document.createElement('dt');
+      label.textContent = key;
+      var detail = document.createElement('dd');
+      detail.textContent = String(value);
+      attribute.append(label, detail);
+      bridgeDetailsContent.appendChild(attribute);
+    });
+  }
+
+  setLayerLoadStatus('bridge-data-load-status', 'loading', 'Loading bridge locations...');
+  fetch('bridge_points.geojson')
+    .then(response => {
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+      return response.json();
+    })
+    .then(data => {
+      window.bridgeFeatures = data.features;
+      if (!data.features || data.features.length === 0) {
+        selectDropdown.innerHTML = '<option value="">-- GeoJSON has no features --</option>';
+        setLayerLoadStatus('bridge-data-load-status', 'empty', 'No bridge locations found');
+        return;
+      }
+      selectDropdown.innerHTML = '<option value="">-- Select a Bridge --</option>';
+      data.features.forEach(function(feature, index) {
+        var props = feature.properties || {};
+        var bridgeName = props['NAME OF BRIDGE'] || props['NAME OF BR'] || props.name || props.Name || props.NAME || props.title || `Bridge Location ${index + 1}`;
+        var bridgeIdLabel = props.SPI_BRIDGE_ID !== undefined && props.SPI_BRIDGE_ID !== null && props.SPI_BRIDGE_ID !== ''
+          ? `SPI Bridge ID ${props.SPI_BRIDGE_ID} - `
+          : '';
+        var option = document.createElement('option');
+        option.value = index;
+        option.textContent = `${bridgeIdLabel}${bridgeName}`;
+        selectDropdown.appendChild(option);
+      });
+      setLayerLoadStatus('bridge-data-load-status', 'loaded', `Loaded: ${data.features.length} bridge locations`);
+    })
+    .catch(error => {
+      console.error('Error loading bridge_points.geojson:', error);
+      selectDropdown.innerHTML = `<option value="">⚠️ Use Live Server (CORS Blocked)</option>`;
+      setLayerLoadStatus('bridge-data-load-status', 'error', 'Failed to load bridge locations');
+    });
+
+  selectDropdown.addEventListener('change', function(e) {
+    var index = e.target.value;
+    activeProjectGroup.clearLayers();
+    clearFloodLayer();
+    if (!document.getElementById('flood_5year').checked) {
+      setLayerLoadStatus('flood_5year-load-status', 'idle', 'Off');
+    }
+
+    if (index === "" || !window.bridgeFeatures) {
+      window.selectedBridgeCoords = null;
+      selectedFloodBridgeId = null;
+      map.setMaxBounds(null); 
+      clearBridgeDetails();
+      var floodCheckbox = document.getElementById('flood_5year');
+      if (floodCheckbox.checked) {
+        floodCheckbox.checked = false;
+        setLayerLoadStatus('flood_5year-load-status', 'idle', 'Off');
+      }
+      refreshAllActiveFacilities();
+      return;
+    }
+
+    var feature = window.bridgeFeatures[index];
+    var coords = feature.geometry.coordinates;
+    var props = feature.properties || {};
+    selectedFloodBridgeId = props.SPI_BRIDGE_ID;
+    var name = props['NAME OF BRIDGE'] || props['NAME OF BR'] || props.name || props.Name || props.NAME || props.title || "Selected Location";
+    showBridgeDetails(props);
+
+    if (!Array.isArray(coords) || coords.length < 2) return;
+    var lng = parseFloat(coords[0]);
+    var lat = parseFloat(coords[1]);
+    if (isNaN(lng) || isNaN(lat)) return;
+
+    window.selectedBridgeCoords = [lat, lng];
+
+    var marker = L.marker([lat, lng]).bindPopup(`<strong>${name}</strong>`);
+    activeProjectGroup.addLayer(marker);
+
+    var bufferCircle = L.circle([lat, lng], {
+      radius: 5000,
+      color: '#3b82f6',
+      fillColor: '#3b82f6',
+      fillOpacity: 0.15,
+      weight: 2
+    }).bindPopup(`<strong>5 km Radius Buffer</strong><br>${name}`);
+    activeProjectGroup.addLayer(bufferCircle);
+
+    map.stop();
+    map.setMaxBounds(null);
+    map.setMinZoom(0);
+    map.invalidateSize({ pan: false });
+    map.flyTo([lat, lng], Math.max(map.getZoom(), 12), { animate: true, duration: 0.8 });
+    marker.openPopup();
+
+    refreshAllActiveFacilities();
+    if (document.getElementById('flood_5year').checked) {
+      loadSelectedFloodLayer();
+    }
+  });
+
+  function clearFloodLayer() {
+    floodLayer.clearLayers();
+    if (map.hasLayer(floodLayer)) map.removeLayer(floodLayer);
+    updateLegendHtml('flood_5year', false, '');
+  }
+
+  function loadSelectedFloodLayer() {
+    var checkbox = document.getElementById('flood_5year');
+    if (!checkbox.checked) return;
+    if (selectedFloodBridgeId === null || selectedFloodBridgeId === undefined || selectedFloodBridgeId === '') {
+      alert('Please select a Bridge Location first.');
+      checkbox.checked = false;
+      setLayerLoadStatus('flood_5year-load-status', 'error', 'Select a bridge first');
+      return;
+    }
+
+    var bridgeId = String(selectedFloodBridgeId);
+    var showFloodData = function(data) {
+      if (!checkbox.checked || String(selectedFloodBridgeId) !== bridgeId) return;
+      floodLayer.clearLayers();
+      floodLayer.addData(data);
+      map.addLayer(floodLayer);
+
+      var riskCounts = {};
+      data.features.forEach(function(feature) {
+        var riskLevel = (feature.properties || {})['Risk Level'] || 'Unknown';
+        riskCounts[riskLevel] = (riskCounts[riskLevel] || 0) + 1;
+      });
+      var riskLevels = floodLayer.getLayers().length;
+      setLayerLoadStatus(
+        'flood_5year-load-status',
+        riskLevels ? 'loaded' : 'empty',
+        riskLevels ? `Loaded: ${riskLevels} flood areas` : 'Loaded: no flood areas'
+      );
+
+      var legendHtml = '<div class="legend-title">5-Year Flood Risk</div>';
+      Object.keys(floodRiskColors).forEach(function(riskLevel) {
+        var swatch = `<span style="display:inline-block;width:14px;height:14px;background:${floodRiskColors[riskLevel]};border:1px solid #94a3b8;vertical-align:middle;margin-right:6px;"></span>`;
+        legendHtml += `<div>${swatch}${riskLevel} (${riskCounts[riskLevel] || 0})</div>`;
+      });
+      updateLegendHtml('flood_5year', true, legendHtml);
+    };
+
+    setLayerLoadStatus('flood_5year-load-status', 'loading', 'Loading 5-Year Flood Inundation...');
+    if (floodDataCache[bridgeId]) {
+      showFloodData(floodDataCache[bridgeId]);
+      return;
+    }
+
+    var filePath = `Hazard/5-Year Flood Inundation/SPI_Bridge_${encodeURIComponent(bridgeId)}.geojson`;
+    fetch(filePath)
+      .then(function(response) {
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        return response.json();
+      })
+      .then(function(data) {
+        if (!Array.isArray(data.features)) throw new Error('GeoJSON does not contain a features array.');
+        floodDataCache[bridgeId] = data;
+        showFloodData(data);
+      })
+      .catch(function(error) {
+        if (!checkbox.checked || String(selectedFloodBridgeId) !== bridgeId) return;
+        console.error(`Error loading ${filePath}:`, error);
+        alert(`Could not load flood data for Bridge ID ${bridgeId}.`);
+        checkbox.checked = false;
+        clearFloodLayer();
+        setLayerLoadStatus('flood_5year-load-status', 'error', 'Failed to load');
+      });
+  }
+
+  document.getElementById('flood_5year').addEventListener('change', function(event) {
+    if (!event.target.checked) {
+      clearFloodLayer();
+      setLayerLoadStatus('flood_5year-load-status', 'idle', 'Off');
+      return;
+    }
+    loadSelectedFloodLayer();
+  });
+
+  function updateLegendHtml(id, active, html) {
+    var legend = document.getElementById(`legend-${id}`);
+    if (legend) {
+      legend.classList.toggle('active', active);
+      legend.innerHTML = active ? html : '';
+    }
+  }
+
+  function getLegendShapeHtml(shapeType, colorHex) {
+    if (shapeType === 'square') {
+      return `<span style="display:inline-block; width:12px; height:12px; background-color:${colorHex}; border:1px solid #fff; vertical-align:middle; margin-right:6px; box-shadow:0 0 2px rgba(0,0,0,0.5);"></span>`;
+    } else if (shapeType === 'triangle') {
+      return `<span style="display:inline-block; width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-bottom:12px solid ${colorHex}; vertical-align:middle; margin-right:6px; filter:drop-shadow(0 1px 1px rgba(0,0,0,0.5));"></span>`;
+    } else if (shapeType === 'diamond') {
+      return `<span style="display:inline-block; width:10px; height:10px; background-color:${colorHex}; transform:rotate(45deg); border:1px solid #fff; vertical-align:middle; margin-right:8px; margin-left:2px; box-shadow:0 0 2px rgba(0,0,0,0.5);"></span>`;
+    } else if (shapeType === 'cross') {
+      return `<span style="display:inline-block; width:14px; height:14px; background-color:${colorHex}; color:#fff; font-weight:bold; font-size:10px; line-height:14px; text-align:center; border-radius:2px; border:1px solid #fff; vertical-align:middle; margin-right:6px; box-shadow:0 0 2px rgba(0,0,0,0.5);">+</span>`;
+    } else {
+      return `<span style="display:inline-block; width:12px; height:12px; background-color:${colorHex}; border-radius:50%; border:1px solid #fff; vertical-align:middle; margin-right:6px; box-shadow:0 0 2px rgba(0,0,0,0.5);"></span>`;
+    }
+  }
+
+  var dpwhLegendHtml = {};
+
+  function loadDpwhLegend() {
+    fetch('https://apps2.dpwh.gov.ph/server/rest/services/DPWH_Public/RoadNetwork_RoadClassification/MapServer/legend?f=pjson')
+      .then(response => response.json())
+      .then(data => {
+        data.layers.forEach(layer => {
+          var legendItems = layer.legend || [];
+          dpwhLegendHtml[layer.layerId] = legendItems.map(item =>
+            `<div><img class="legend-image" src="data:${item.contentType};base64,${item.imageData}" alt="">${item.label || layer.layerName}</div>`
+          ).join('');
+
+          var checkboxId = layer.layerId === 0 ? 'expressways' : layer.layerId === 1 ? 'roads' : 'bridges';
+          var checkbox = document.getElementById(checkboxId);
+          if (checkbox && checkbox.checked) {
+            updateLegendHtml(checkboxId, true, dpwhLegendHtml[layer.layerId]);
+          }
+        });
+      })
+      .catch(error => console.error('Error loading DPWH legend:', error));
+  }
+
+  loadDpwhLegend();
+
+  var roadLayer = L.esri.dynamicMapLayer({
+    url: 'https://apps2.dpwh.gov.ph/server/rest/services/DPWH_Public/RoadNetwork_RoadClassification/MapServer',
+    layers: [1], opacity: 0.7
+  });
+  var expresswayLayer = L.esri.dynamicMapLayer({
+    url: 'https://apps2.dpwh.gov.ph/server/rest/services/DPWH_Public/RoadNetwork_RoadClassification/MapServer',
+    layers: [0], opacity: 0.7
+  });
+  var bridgeLayer = L.esri.dynamicMapLayer({
+    url: 'https://apps2.dpwh.gov.ph/server/rest/services/DPWH_Public/RoadNetwork_RoadClassification/MapServer',
+    layers: [2], opacity: 0.7
+  });
+
+  function trackServiceLayer(layer, checkboxId, label) {
+    layer.on('loading', function() {
+      if (document.getElementById(checkboxId).checked) {
+        setLayerLoadStatus(`${checkboxId}-load-status`, 'loading', `Loading ${label}...`);
+      }
+    });
+    layer.on('load', function() {
+      if (document.getElementById(checkboxId).checked) {
+        setLayerLoadStatus(`${checkboxId}-load-status`, 'loaded', `${label} loaded`);
+      }
+    });
+    layer.on('requesterror', function() {
+      if (document.getElementById(checkboxId).checked) {
+        setLayerLoadStatus(`${checkboxId}-load-status`, 'error', `Failed to load ${label}`);
+      }
+    });
+  }
+
+  trackServiceLayer(roadLayer, 'roads', 'Roads');
+  trackServiceLayer(expresswayLayer, 'expressways', 'Expressways');
+  trackServiceLayer(bridgeLayer, 'bridges', 'DPWH Bridges');
+
+  function registerFacilityLayerWithDistanceFilter(checkboxId, filePath, colorHex, shapeType, legendTitle) {
+    var layerGroup = L.layerGroup();
+    window.activeFacilityLayers[checkboxId] = {
+      group: layerGroup,
+      filePath: filePath,
+      colorHex: colorHex,
+      shapeType: shapeType,
+      legendTitle: legendTitle
+    };
+
+    document.getElementById(checkboxId).addEventListener('change', e => {
+      if (e.target.checked) {
+        if (!window.selectedBridgeCoords) {
+          alert("Please select a Bridge Location first so the map can filter local facilities within 10km.");
+          e.target.checked = false;
+          setLayerLoadStatus(`${checkboxId}-load-status`, 'error', 'Select a bridge first');
+          return;
+        }
+        loadAndFilterFacilityData(checkboxId);
+      } else {
+        map.removeLayer(layerGroup);
+        layerGroup.clearLayers();
+        updateLegendHtml(checkboxId, false, '');
+        setLayerLoadStatus(`${checkboxId}-load-status`, 'idle', 'Off');
+      }
+    });
+  }
+
+  function loadAndFilterFacilityData(checkboxId) {
+    var config = window.activeFacilityLayers[checkboxId];
+    var layerGroup = config.group;
+    layerGroup.clearLayers();
+
+    if (!window.selectedBridgeCoords) {
+      setLayerLoadStatus(`${checkboxId}-load-status`, 'error', 'Select a bridge first');
+      return;
+    }
+    setLayerLoadStatus(`${checkboxId}-load-status`, 'loading', `Loading ${config.legendTitle}...`);
+
+    var renderGeoJSON = (data) => {
+      if (!document.getElementById(checkboxId).checked) return;
+      var bridgeLatLng = L.latLng(window.selectedBridgeCoords[0], window.selectedBridgeCoords[1]);
+
+      var filteredFeatures = data.features.filter(feature => {
+        if (!feature.geometry || !feature.geometry.coordinates) return false;
+        var coords = feature.geometry.coordinates;
+        var featLatLng = L.latLng(coords[1], coords[0]); 
+        var distanceMeters = bridgeLatLng.distanceTo(featLatLng);
+        return distanceMeters <= 10000; 
+      });
+
+      var filteredGeoJson = {
+        type: "FeatureCollection",
+        features: filteredFeatures
+      };
+
+      L.geoJSON(filteredGeoJson, {
+        pointToLayer: function (feature, latlng) {
+          if (config.shapeType === 'square') {
+            return L.marker(latlng, {
+              icon: L.divIcon({
+                className: 'custom-square-icon',
+                html: `<div style="background-color: ${config.colorHex}; width: 10px; height: 10px; border: 1px solid #fff; box-shadow: 0 0 2px rgba(0,0,0,0.5);"></div>`,
+                iconSize: [12, 12],
+                iconAnchor: [6, 6]
+              })
+            });
+          } else if (config.shapeType === 'triangle') {
+            return L.marker(latlng, {
+              icon: L.divIcon({
+                className: 'custom-triangle-icon',
+                html: `<div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 12px solid ${config.colorHex}; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.5));"></div>`,
+                iconSize: [12, 12],
+                iconAnchor: [6, 6]
+              })
+            });
+          } else if (config.shapeType === 'diamond') {
+            return L.marker(latlng, {
+              icon: L.divIcon({
+                className: 'custom-diamond-icon',
+                html: `<div style="background-color: ${config.colorHex}; width: 10px; height: 10px; transform: rotate(45deg); border: 1px solid #fff; box-shadow: 0 0 2px rgba(0,0,0,0.5);"></div>`,
+                iconSize: [12, 12],
+                iconAnchor: [6, 6]
+              })
+            });
+          } else if (config.shapeType === 'cross') {
+            return L.marker(latlng, {
+              icon: L.divIcon({
+                className: 'custom-cross-icon',
+                html: `<div style="background-color: ${config.colorHex}; color: #fff; font-weight: bold; font-size: 11px; line-height: 12px; text-align: center; width: 14px; height: 14px; border-radius: 3px; border: 1px solid #fff; box-shadow: 0 0 2px rgba(0,0,0,0.5);">+</div>`,
+                iconSize: [14, 14],
+                iconAnchor: [7, 7]
+              })
+            });
+          } else {
+            return L.circleMarker(latlng, {
+              radius: 6,
+              fillColor: config.colorHex,
+              color: '#ffffff',
+              weight: 1.5,
+              opacity: 1,
+              fillOpacity: 0.9
+            });
+          }
+        },
+        onEachFeature: function (feature, layer) {
+          var props = feature.properties || {};
+          var name = props.name || props.NAME || props.Name || config.legendTitle;
+          var popupContent = `<strong>${name}</strong>`;
+          Object.entries(props).forEach(([k, v]) => {
+            if (k !== 'name' && k !== 'NAME' && k !== 'Name' && v) {
+              popupContent += `<br>${k}: ${v}`;
+            }
+          });
+          layer.bindPopup(popupContent);
+        }
+      }).addTo(layerGroup);
+
+      map.addLayer(layerGroup);
+      setLayerLoadStatus(
+        `${checkboxId}-load-status`,
+        filteredFeatures.length ? 'loaded' : 'empty',
+        filteredFeatures.length ? `Loaded: ${filteredFeatures.length} nearby features` : 'Loaded: no features within 10 km'
+      );
+      var shapeHtml = getLegendShapeHtml(config.shapeType, config.colorHex);
+      updateLegendHtml(checkboxId, true, `<div class="legend-title">${shapeHtml}<span>${config.legendTitle} (${filteredFeatures.length})</span></div>`);
+    };
+
+    if (window.facilityCache[config.filePath]) {
+      renderGeoJSON(window.facilityCache[config.filePath]);
+    } else {
+      fetch(config.filePath)
+        .then(response => {
+          if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+          return response.json();
+        })
+        .then(data => {
+          window.facilityCache[config.filePath] = data;
+          renderGeoJSON(data);
+        })
+        .catch(error => {
+          console.error(`Error loading ${config.filePath}:`, error);
+          alert(`Could not load file: ${config.filePath}.`);
+          document.getElementById(checkboxId).checked = false;
+          setLayerLoadStatus(`${checkboxId}-load-status`, 'error', 'Failed to load');
+        });
+    }
+  }
+
+  function refreshAllActiveFacilities() {
+    Object.keys(window.activeFacilityLayers).forEach(checkboxId => {
+      var checkbox = document.getElementById(checkboxId);
+      if (checkbox && checkbox.checked) {
+        if (window.selectedBridgeCoords) {
+          loadAndFilterFacilityData(checkboxId);
+        } else {
+          window.activeFacilityLayers[checkboxId].group.clearLayers();
+          map.removeLayer(window.activeFacilityLayers[checkboxId].group);
+          updateLegendHtml(checkboxId, false, '');
+          checkbox.checked = false;
+          setLayerLoadStatus(`${checkboxId}-load-status`, 'idle', 'Off');
+        }
+      }
+    });
+  }
+
+  // --- REGISTER ALL 14 FACILITY LAYERS WITH SHAPES ---
+  registerFacilityLayerWithDistanceFilter('deped_elementary', 'Facilities/Educational Facilities/DEPED Elementary Schools.geojson', '#f59e0b', 'square', 'DEPED Elementary Schools');
+  registerFacilityLayerWithDistanceFilter('deped_secondary', 'Facilities/Educational Facilities/DEPED Secondary Schools.geojson', '#8b5cf6', 'square', 'DEPED Secondary Schools');
+
+  registerFacilityLayerWithDistanceFilter('abemis_coffee', 'Facilities/GeoAgri Facilities/ABEMIS Coffee and Cacao Facilities.geojson', '#10b981', 'diamond', 'ABEMIS Coffee & Cacao');
+  registerFacilityLayerWithDistanceFilter('bafe_agri', 'Facilities/GeoAgri Facilities/BAFE Agri Processing Centers.geojson', '#14b8a6', 'diamond', 'BAFE Agri Processing');
+  registerFacilityLayerWithDistanceFilter('bafe_markets', 'Facilities/GeoAgri Facilities/BAFE Public Markets.geojson', '#06b6d4', 'circle', 'BAFE Public Markets');
+  registerFacilityLayerWithDistanceFilter('bafe_rice', 'Facilities/GeoAgri Facilities/BAFE Rice Processing Centers.geojson', '#3b82f6', 'diamond', 'BAFE Rice Processing');
+  registerFacilityLayerWithDistanceFilter('nfa_warehouses', 'Facilities/GeoAgri Facilities/NFA Warehouses.geojson', '#6366f1', 'square', 'NFA Warehouses');
+
+  registerFacilityLayerWithDistanceFilter('doh_gov_hospitals', 'Facilities/Health Facilities/DOH Government Hospitals.geojson', '#ef4444', 'cross', 'DOH Government Hospitals');
+  registerFacilityLayerWithDistanceFilter('doh_pvt_hospitals', 'Facilities/Health Facilities/DOH Private Hospitals.geojson', '#f43f5e', 'cross', 'DOH Private Hospitals');
+  registerFacilityLayerWithDistanceFilter('doh_vax', 'Facilities/Health Facilities/DOH Vaccination Facilities.geojson', '#ec4899', 'triangle', 'DOH Vaccination Facilities');
+
+  registerFacilityLayerWithDistanceFilter('police_stations', 'Facilities/OSM Extracted Facilities/Police Stations.geojson', '#38bdf8', 'circle', 'Police Stations');
+  registerFacilityLayerWithDistanceFilter('fire_stations', 'Facilities/OSM Extracted Facilities/Fire Stations.geojson', '#fb923c', 'triangle', 'Fire Stations');
+  registerFacilityLayerWithDistanceFilter('barangay_halls', 'Facilities/OSM Extracted Facilities/Barangay Halls.geojson', '#4ade80', 'circle', 'Barangay Halls');
+
+  var nipasStatusColors = {
+    'Legislated': '#22c55e',
+    'Initial Component': '#f59e0b',
+    'Proclaimed': '#38bdf8'
+  };
+  function setLayerLoadStatus(id, state, message) {
+    var status = document.getElementById(id);
+    if (!status) return;
+    status.dataset.state = state;
+    status.textContent = message;
+  }
+
+  document.querySelectorAll('.gis-sidebar-content input[type="checkbox"]').forEach(function(checkbox) {
+    var statusId = `${checkbox.id}-load-status`;
+    if (document.getElementById(statusId)) return;
+    var status = document.createElement('div');
+    status.id = statusId;
+    status.className = 'layer-load-status';
+    status.dataset.state = 'idle';
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
+    status.textContent = 'Off';
+    checkbox.closest('.form-check').insertAdjacentElement('afterend', status);
+  });
+
+  var liquefactionClasses = {
+    '04': { label: 'High Potential', color: '#000000' },
+    '03': { label: 'Moderate Potential', color: '#000000' },
+    '02': { label: 'Low Potential', color: '#000000' },
+    '07': { label: 'Highly Susceptible', color: '#ff0000' },
+    '06': { label: 'Moderately Susceptible', color: '#bf00ff' },
+    '05': { label: 'Least Susceptible', color: '#ffff00' },
+    '01': { label: 'Generally Susceptible', color: '#ffcc00' }
+  };
+  var liquefactionData = null;
+  var liquefactionLayer = L.geoJSON(null, {
+    style: function(feature) {
+      var properties = feature.properties || {};
+      var classCode = String(properties.lccode || '').padStart(2, '0');
+      var classInfo = liquefactionClasses[classCode];
+      var color = classInfo ? classInfo.color : '#a1a1aa';
+      return {
+        color: color,
+        weight: 1,
+        opacity: 0.9,
+        fillColor: color,
+        fillOpacity: 0.55
+      };
+    },
+    onEachFeature: function(feature, layer) {
+      var properties = feature.properties || {};
+      var classCode = String(properties.lccode || '').padStart(2, '0');
+      var classInfo = liquefactionClasses[classCode];
+      var popup = document.createElement('div');
+      var title = document.createElement('strong');
+      title.textContent = classInfo ? classInfo.label : 'Liquefaction class';
+      popup.appendChild(title);
+      var detail = document.createElement('div');
+      detail.textContent = `Class ${classCode || 'Unknown'}${properties.province ? ` | ${properties.province}` : ''}`;
+      popup.appendChild(detail);
+      layer.bindPopup(popup);
+    }
+  });
+
+  document.getElementById('liquefaction').addEventListener('change', function(event) {
+    if (!event.target.checked) {
+      map.removeLayer(liquefactionLayer);
+      updateLegendHtml('liquefaction', false, '');
+      setLayerLoadStatus('liquefaction-load-status', 'idle', 'Off');
+      return;
+    }
+
+    setLayerLoadStatus('liquefaction-load-status', 'loading', 'Loading Liquefaction...');
+
+    var showLiquefaction = function(data) {
+      if (!document.getElementById('liquefaction').checked) return;
+      liquefactionLayer.clearLayers();
+      liquefactionLayer.addData(data);
+      map.addLayer(liquefactionLayer);
+
+      var featureCount = liquefactionLayer.getLayers().length;
+      setLayerLoadStatus(
+        'liquefaction-load-status',
+        featureCount ? 'loaded' : 'empty',
+        featureCount ? `Loaded: ${featureCount} features` : 'Loaded: no features'
+      );
+
+      var classCounts = {};
+      data.features.forEach(function(feature) {
+        var code = String((feature.properties || {}).lccode || '').padStart(2, '0');
+        classCounts[code] = (classCounts[code] || 0) + 1;
+      });
+      var legendHtml = '<div class="legend-title">Liquefaction Class</div>';
+      Object.keys(liquefactionClasses).forEach(function(code) {
+        var classInfo = liquefactionClasses[code];
+        var swatch = `<span style="display:inline-block;width:14px;height:14px;background:${classInfo.color};border:1px solid #94a3b8;vertical-align:middle;margin-right:6px;"></span>`;
+        legendHtml += `<div>${swatch}<span>${code} &nbsp; ${classInfo.label} (${classCounts[code] || 0})</span></div>`;
+      });
+      updateLegendHtml('liquefaction', true, legendHtml);
+    };
+
+    if (liquefactionData) {
+      showLiquefaction(liquefactionData);
+      return;
+    }
+
+    fetch('Hazard/Liquefaction.geojson')
+      .then(function(response) {
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        return response.json();
+      })
+      .then(function(data) {
+        if (!data.features || !Array.isArray(data.features)) {
+          throw new Error('GeoJSON does not contain a features array.');
+        }
+        liquefactionData = data;
+        showLiquefaction(data);
+      })
+      .catch(function(error) {
+        console.error('Error loading Hazard/Liquefaction.geojson:', error);
+        event.target.checked = false;
+        setLayerLoadStatus('liquefaction-load-status', 'error', 'Failed to load');
+      });
+  });
+
+  var nipasGeoJsonData = null;
+  var nipasLayer = L.geoJSON(null, {
+    style: function(feature) {
+      var status = (feature.properties || {}).status;
+      var color = nipasStatusColors[status] || '#a1a1aa';
+      return {
+        color: color,
+        weight: 1.5,
+        opacity: 0.9,
+        fillColor: color,
+        fillOpacity: 0.4
+      };
+    },
+    onEachFeature: function(feature, layer) {
+      var properties = feature.properties || {};
+      var popup = document.createElement('div');
+      var name = document.createElement('strong');
+      name.textContent = properties.pa_name || 'Protected Area';
+      popup.appendChild(name);
+      [
+        ['Status', properties.status],
+        ['Category', properties.category],
+        ['Region', properties.region]
+      ].forEach(function([label, value]) {
+        if (value) {
+          var detail = document.createElement('div');
+          detail.textContent = `${label}: ${value}`;
+          popup.appendChild(detail);
+        }
+      });
+      layer.bindPopup(popup);
+    }
+  });
+
+  document.getElementById('nipas').addEventListener('change', function(event) {
+    if (!event.target.checked) {
+      map.removeLayer(nipasLayer);
+      updateLegendHtml('nipas', false, '');
+      setLayerLoadStatus('nipas-load-status', 'idle', 'Off');
+      return;
+    }
+    setLayerLoadStatus('nipas-load-status', 'loading', 'Loading NIPAS...');
+
+    var showNipasLayer = function(data) {
+      if (!document.getElementById('nipas').checked) return;
+      nipasLayer.clearLayers();
+      nipasLayer.addData(data);
+      map.addLayer(nipasLayer);
+      var featureCount = nipasLayer.getLayers().length;
+      setLayerLoadStatus(
+        'nipas-load-status',
+        featureCount ? 'loaded' : 'empty',
+        featureCount ? `Loaded: ${featureCount} features` : 'Loaded: no features'
+      );
+
+      var statusCounts = {};
+      data.features.forEach(function(feature) {
+        var status = (feature.properties || {}).status || 'Unspecified';
+        statusCounts[status] = (statusCounts[status] || 0) + 1;
+      });
+      var legendHtml = '<div class="legend-title">NIPAS Status</div>';
+      Object.keys(statusCounts).sort().forEach(function(status) {
+        var color = nipasStatusColors[status] || '#a1a1aa';
+        legendHtml += `<div>${getLegendShapeHtml('square', color)}${status} (${statusCounts[status]})</div>`;
+      });
+      updateLegendHtml('nipas', true, legendHtml);
+    };
+
+    if (nipasGeoJsonData) {
+      showNipasLayer(nipasGeoJsonData);
+      return;
+    }
+
+    fetch('Environmental and Social/NIPAS.geojson')
+      .then(function(response) {
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        return response.json();
+      })
+      .then(function(data) {
+        nipasGeoJsonData = data;
+        showNipasLayer(data);
+      })
+      .catch(function(error) {
+        console.error('Error loading Environmental and Social/NIPAS.geojson:', error);
+        alert('Could not load Environmental and Social/NIPAS.geojson.');
+        event.target.checked = false;
+        setLayerLoadStatus('nipas-load-status', 'error', 'Failed to load');
+      });
+  });
+
+  var povertyIncidenceLevels = [
+    { label: 'Level 1 (0 - 20.1)', max: 20.1, color: '#fff1e6' },
+    { label: 'Level 2 (20.1 - 40.1)', max: 40.1, color: '#fdae9b' },
+    { label: 'Level 3 (40.1 - 60.1)', max: 60.1, color: '#fb765f' },
+    { label: 'Level 4 (60.1 - 80)', max: 80, color: '#d7191c' },
+    { label: 'Level 5 (80 - Above)', max: Infinity, color: '#7f0015' }
+  ];
+  var povertyIncidenceData = null;
+  function reprojectPovertyCoordinates(coordinates) {
+    if (typeof coordinates[0] === 'number' && typeof coordinates[1] === 'number') {
+      var transformed = proj4('EPSG:32651', 'EPSG:4326', [coordinates[0], coordinates[1]]);
+      return transformed.concat(coordinates.slice(2));
+    }
+    return coordinates.map(reprojectPovertyCoordinates);
+  }
+
+  var povertyIncidenceLayer = L.geoJSON(null, {
+    style: function(feature) {
+      var value = Number((feature.properties || {}).pi_2023);
+      var level = povertyIncidenceLevels.find(function(item) {
+        return value <= item.max;
+      });
+      var color = Number.isFinite(value) && level ? level.color : '#a1a1aa';
+      return {
+        color: color,
+        weight: 0.8,
+        opacity: 0.9,
+        fillColor: color,
+        fillOpacity: 0.6
+      };
+    },
+    onEachFeature: function(feature, layer) {
+      var properties = feature.properties || {};
+      var popup = document.createElement('div');
+      var name = document.createElement('strong');
+      name.textContent = properties.adm3_en || 'Area';
+      popup.appendChild(name);
+      var detail = document.createElement('div');
+      detail.textContent = `Poverty Incidence (2023): ${properties.pi_2023 ?? 'Not available'}%`;
+      popup.appendChild(detail);
+      layer.bindPopup(popup);
+    }
+  });
+
+  document.getElementById('poverty_incidence').addEventListener('change', function(event) {
+    if (!event.target.checked) {
+      map.removeLayer(povertyIncidenceLayer);
+      updateLegendHtml('poverty_incidence', false, '');
+      setLayerLoadStatus('poverty_incidence-load-status', 'idle', 'Off');
+      return;
+    }
+    setLayerLoadStatus('poverty_incidence-load-status', 'loading', 'Loading Poverty Incidence...');
+
+    var showPovertyIncidence = function(data) {
+      if (!document.getElementById('poverty_incidence').checked) return;
+      povertyIncidenceLayer.clearLayers();
+      povertyIncidenceLayer.addData(data);
+      map.addLayer(povertyIncidenceLayer);
+      var featureCount = povertyIncidenceLayer.getLayers().length;
+      setLayerLoadStatus(
+        'poverty_incidence-load-status',
+        featureCount ? 'loaded' : 'empty',
+        featureCount ? `Loaded: ${featureCount} features` : 'Loaded: no features'
+      );
+
+      var counts = povertyIncidenceLevels.map(function() { return 0; });
+      data.features.forEach(function(feature) {
+        var value = Number((feature.properties || {}).pi_2023);
+        if (!Number.isFinite(value)) return;
+        var levelIndex = povertyIncidenceLevels.findIndex(function(level) {
+          return value <= level.max;
+        });
+        if (levelIndex >= 0) counts[levelIndex] += 1;
+      });
+      var legendHtml = '<div class="legend-title">Poverty Incidence (2023)</div>';
+      povertyIncidenceLevels.forEach(function(level, index) {
+        legendHtml += `<div>${getLegendShapeHtml('square', level.color)}${level.label} (${counts[index]})</div>`;
+      });
+      updateLegendHtml('poverty_incidence', true, legendHtml);
+    };
+
+    if (povertyIncidenceData) {
+      showPovertyIncidence(povertyIncidenceData);
+      return;
+    }
+
+    fetch('Environmental and Social/Poverty Incidence.geojson')
+      .then(function(response) {
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        return response.json();
+      })
+      .then(function(data) {
+        data.features.forEach(function(feature) {
+          if (feature.geometry && feature.geometry.coordinates) {
+            feature.geometry.coordinates = reprojectPovertyCoordinates(feature.geometry.coordinates);
+          }
+        });
+        povertyIncidenceData = data;
+        showPovertyIncidence(data);
+      })
+      .catch(function(error) {
+        console.error('Error loading Environmental and Social/Poverty Incidence.geojson:', error);
+        alert('Could not load Environmental and Social/Poverty Incidence.geojson.');
+        event.target.checked = false;
+        setLayerLoadStatus('poverty_incidence-load-status', 'error', 'Failed to load');
+      });
+  });
+
+  // Infrastructure listeners
+  document.getElementById('roads').addEventListener('change', e => {
+    if (e.target.checked) {
+      setLayerLoadStatus('roads-load-status', 'loading', 'Loading Roads...');
+      map.addLayer(roadLayer);
+    } else {
+      map.removeLayer(roadLayer);
+      setLayerLoadStatus('roads-load-status', 'idle', 'Off');
+    }
+    updateLegendHtml('roads', e.target.checked, dpwhLegendHtml[1] || '<div class="legend-title">Roads</div>');
+  });
+
+  document.getElementById('expressways').addEventListener('change', e => {
+    if (e.target.checked) {
+      setLayerLoadStatus('expressways-load-status', 'loading', 'Loading Expressways...');
+      map.addLayer(expresswayLayer);
+    } else {
+      map.removeLayer(expresswayLayer);
+      setLayerLoadStatus('expressways-load-status', 'idle', 'Off');
+    }
+    updateLegendHtml('expressways', e.target.checked, dpwhLegendHtml[0] || '<div class="legend-title">Expressways</div>');
+  });
+
+  document.getElementById('bridges').addEventListener('change', e => {
+    if (e.target.checked) {
+      setLayerLoadStatus('bridges-load-status', 'loading', 'Loading DPWH Bridges...');
+      map.addLayer(bridgeLayer);
+    } else {
+      map.removeLayer(bridgeLayer);
+      setLayerLoadStatus('bridges-load-status', 'idle', 'Off');
+    }
+    updateLegendHtml('bridges', e.target.checked, dpwhLegendHtml[2] || '<div class="legend-title">Bridges</div>');
+  });
+
+  function exportMap() {
+    alert("Snapshot export feature goes here!");
+  }
+</script>
+
+</body>
+</html>
