@@ -46,10 +46,27 @@
     }
 
     .gis-sidebar-header {
-      padding: 1.25rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      font-size: 1rem;
+      padding: 0.25rem 0 0.65rem;
+      font-size: 0.9rem;
       font-weight: 700;
+    }
+
+    .gis-sidebar-header > span {
+      display: block;
+      color: #f8fafc;
+      line-height: 1.35;
+    }
+
+    .gis-sidebar-summary {
+      margin: 0 0 0.85rem;
+      padding: 0.85rem;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      background: #182331;
+      color: #c5d8dc;
+      font-size: 0.7rem;
+      font-weight: 400;
+      line-height: 1.5;
     }
 
     .gis-sidebar-content {
@@ -235,28 +252,61 @@
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
-      margin: 0.15rem 0 0.35rem 1.85rem;
-      color: #94a3b8;
-      font-size: 0.7rem;
-      line-height: 1.2;
+      max-width: calc(100% - 1.85rem);
+      box-sizing: border-box;
+      margin: 0.15rem 0 0.4rem 1.85rem;
+      padding: 0.2rem 0.5rem;
+      border: 1px solid #475569;
+      border-radius: 999px;
+      background: rgba(71, 85, 105, 0.22);
+      color: #cbd5e1;
+      font-size: 0.65rem;
+      font-weight: 600;
+      line-height: 1.3;
+      overflow-wrap: anywhere;
+    }
+
+    .layer-load-status:not([data-state="loading"])::before {
+      flex: 0 0 0.4rem;
+      width: 0.4rem;
+      height: 0.4rem;
+      border-radius: 50%;
+      background: currentColor;
+      content: "";
     }
 
     .layer-load-status[data-state="loading"]::before {
-      width: 0.7rem;
-      height: 0.7rem;
-      border: 2px solid #475569;
+      flex: 0 0 0.55rem;
+      width: 0.55rem;
+      height: 0.55rem;
+      border: 2px solid rgba(96, 165, 250, 0.35);
       border-top-color: #38bdf8;
       border-radius: 50%;
       content: "";
       animation: layer-load-spin 0.8s linear infinite;
     }
 
-    .layer-load-status[data-state="loaded"] {
-      color: #4ade80;
+    .layer-load-status[data-state="loading"] {
+      border-color: #1d4ed8;
+      background: rgba(30, 64, 175, 0.2);
+      color: #93c5fd;
     }
 
-    .layer-load-status[data-state="empty"],
+    .layer-load-status[data-state="loaded"] {
+      border-color: #166534;
+      background: rgba(22, 101, 52, 0.2);
+      color: #86efac;
+    }
+
+    .layer-load-status[data-state="empty"] {
+      border-color: #854d0e;
+      background: rgba(133, 77, 14, 0.2);
+      color: #fcd34d;
+    }
+
     .layer-load-status[data-state="error"] {
+      border-color: #991b1b;
+      background: rgba(153, 27, 27, 0.2);
       color: #fca5a5;
     }
 
@@ -522,11 +572,11 @@
     
     <!-- Left Sidebar: Map Layers Control Panel -->
     <div class="gis-sidebar">
-      <div class="gis-sidebar-header">
-        <span>Pang-Agraryong Tulay Para sa Bagong Bayanihan ng mga Magsasaka (PBBM) Project</span>
-      </div>
-
       <div class="gis-sidebar-content">
+        <div class="gis-sidebar-header">
+          <span>Pang-Agraryong Tulay Para sa Bagong Bayanihan ng mga Magsasaka (PBBM) Project</span>
+        </div>
+        <p class="gis-sidebar-summary">The project proposes to deliver 350 improved bridges, equivalent to approximately 10,500 linear meters, in Agrarian Reform Communities (ARCs) and Comprehensive Agrarian Reform Program (CARP)-covered areas nationwide, addressing agrarian reform beneficiaries' (ARBs) need for better infrastructure services.</p>
         
         <!-- Basemap Selector -->
         <div class="layer-category-card">
