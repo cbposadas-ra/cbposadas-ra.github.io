@@ -58,6 +58,86 @@
       padding: 1rem;
     }
 
+    .gis-sidebar-footer {
+      padding: 0.75rem 1rem;
+      border-top: 1px solid #1f2937;
+      background: #111827;
+    }
+
+    .disclaimer-button {
+      width: 100%;
+      padding: 0.65rem 0.8rem;
+      border: 1px solid #4b5563;
+      border-radius: 5px;
+      background: #1f2937;
+      color: #f8fafc;
+      font: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .disclaimer-button:hover {
+      background: #374151;
+    }
+
+    .disclaimer-dialog {
+      width: min(34rem, calc(100% - 2rem));
+      max-height: min(80vh, 42rem);
+      padding: 0;
+      overflow: auto;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      background: #111827;
+      color: #f8fafc;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+    }
+
+    .disclaimer-dialog::backdrop {
+      background: rgba(3, 7, 18, 0.76);
+      backdrop-filter: blur(2px);
+    }
+
+    .disclaimer-dialog-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid #273244;
+    }
+
+    .disclaimer-dialog-header h2 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .disclaimer-dialog-close {
+      padding: 0.4rem 0.65rem;
+      border: 1px solid #4b5563;
+      border-radius: 4px;
+      background: #1f2937;
+      color: #f8fafc;
+      font: inherit;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .disclaimer-list {
+      display: grid;
+      gap: 0.9rem;
+      margin: 0;
+      padding: 1.25rem 1.5rem 1.5rem 3rem;
+      color: #d1d5db;
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+
+    .disclaimer-list li::marker {
+      color: #86efac;
+      font-weight: 700;
+    }
+
     .gis-sidebar-content::-webkit-scrollbar,
     .gis-legend-panel::-webkit-scrollbar,
     .leaflet-control-measure .leaflet-control-measure-interaction::-webkit-scrollbar {
@@ -434,23 +514,6 @@
       background: #111827;
       border-top: 1px solid #1f2937;
     }
-
-    .btn-export-snapshot {
-      border: none;
-      border-radius: 8px;
-      background-color: #3b82f6;
-      color: #fff;
-      font-size: 0.825rem;
-      font-weight: 600;
-      padding: 0.6rem;
-      width: 100%;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-    }
-
-    .btn-export-snapshot:hover {
-      background-color: #2563eb;
-    }
   </style>
 </head>
 <body>
@@ -620,18 +683,34 @@
               <input class="form-check-input" type="checkbox" id="expressways">
               <label class="form-check-label" for="expressways">Expressways</label>
             </div>
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" id="bridges">
-              <label class="form-check-label" for="bridges">Bridges</label>
-            </div>
           </div>
         </div>
       </div>
 
-      <div class="gis-export-wrapper">
-        <button class="btn-export-snapshot" onclick="exportMap()">Export Snapshot</button>
+      <div class="gis-sidebar-footer">
+        <button class="disclaimer-button" id="open-disclaimer" type="button" aria-haspopup="dialog">
+          Disclaimer
+        </button>
       </div>
+
     </div>
+
+    <dialog class="disclaimer-dialog" id="disclaimer-dialog" aria-labelledby="disclaimer-title">
+      <div class="disclaimer-dialog-header">
+        <h2 id="disclaimer-title">Data Disclaimers</h2>
+        <button class="disclaimer-dialog-close" id="close-disclaimer" type="button" aria-label="Close disclaimers">
+          Close
+        </button>
+      </div>
+      <ol class="disclaimer-list">
+        <li>All points are based on coordinates provided by Department of Agrarian Reform (DAR).</li>
+        <li>GeoAgri facility locations are based on data published by the Department of Agriculture (DA) on its GeoAgri website.</li>
+        <li>Roads and Expressways data are based on data from the Department of Public Works and Highways (DPWH) - Road and Bridge Information Application (RBIA) </li>
+        <li>Hazard maps are simulation-based and should not be considered a substitute for an on-site engineering survey.</li>
+        <li>Health and educational facility locations are based on data from the GeoHazard website.</li>
+        <li>OpenStreetMaps (OSM)-extracted facility locations are based on information reported or entered by members of the public and may be inaccurate, incomplete, or outdated.</li>
+      </ol>
+    </dialog>
 
     <!-- Center: Interactive Map Preview Canvas -->
     <div class="gis-map-canvas">
@@ -665,7 +744,6 @@
       <!-- Infrastructure -->
       <div id="legend-roads" class="legend-block"></div>
       <div id="legend-expressways" class="legend-block"></div>
-      <div id="legend-bridges" class="legend-block"></div>
 
       <section class="bridge-details" aria-live="polite">
         <h4>Selected Bridge</h4>
@@ -815,7 +893,7 @@
 
     var groups = [
       { title: 'Bridge', fields: ['SYSTRA ID', 'DAR ID', 'Bridge Name', 'Bridge Category'] },
-      { title: 'Location and planning', fields: ['Target Year', 'Region', 'Province', 'Coordinates Y', 'Coordinates X', 'ARC 2026'] },
+      { title: 'Location Details', fields: ['Target Year', 'Region', 'Province', 'Coordinates Y', 'Coordinates X', 'ARC 2026'] },
       { title: 'IVF 2026', fields: ['LINEAR METER IVF 2026', 'EIRR 2026', 'NEW/REPLACEMENT BRIDGE 2026'] },
       { title: 'SYSTRA visits', fields: ['Visited by SYSTRA', 'Selected for 2nd Visit of SYSTRA'] },
       { title: 'IVF documents', fields: ['2023 IVF URL', '2026 IVF URL'] }
@@ -1234,7 +1312,8 @@
             `<div><img class="legend-image" src="data:${item.contentType};base64,${item.imageData}" alt="">${item.label || layer.layerName}</div>`
           ).join('');
 
-          var checkboxId = layer.layerId === 0 ? 'expressways' : layer.layerId === 1 ? 'roads' : 'bridges';
+          var checkboxId = layer.layerId === 0 ? 'expressways' : layer.layerId === 1 ? 'roads' : null;
+          if (!checkboxId) return;
           var checkbox = document.getElementById(checkboxId);
           if (checkbox && checkbox.checked) {
             updateLegendHtml(checkboxId, true, dpwhLegendHtml[layer.layerId]);
@@ -1254,11 +1333,6 @@
     url: 'https://apps2.dpwh.gov.ph/server/rest/services/DPWH_Public/RoadNetwork_RoadClassification/MapServer',
     layers: [0], opacity: 0.7
   });
-  var bridgeLayer = L.esri.dynamicMapLayer({
-    url: 'https://apps2.dpwh.gov.ph/server/rest/services/DPWH_Public/RoadNetwork_RoadClassification/MapServer',
-    layers: [2], opacity: 0.7
-  });
-
   function trackServiceLayer(layer, checkboxId, label) {
     layer.on('loading', function() {
       if (document.getElementById(checkboxId).checked) {
@@ -1279,7 +1353,6 @@
 
   trackServiceLayer(roadLayer, 'roads', 'Roads');
   trackServiceLayer(expresswayLayer, 'expressways', 'Expressways');
-  trackServiceLayer(bridgeLayer, 'bridges', 'DPWH Bridges');
 
   function registerFacilityLayerWithDistanceFilter(checkboxId, filePath, colorHex, shapeType, legendTitle) {
     var layerGroup = L.layerGroup();
@@ -1828,20 +1901,24 @@
     updateLegendHtml('expressways', e.target.checked, dpwhLegendHtml[0] || '<div class="legend-title">Expressways</div>');
   });
 
-  document.getElementById('bridges').addEventListener('change', e => {
-    if (e.target.checked) {
-      setLayerLoadStatus('bridges-load-status', 'loading', 'Loading DPWH Bridges...');
-      map.addLayer(bridgeLayer);
-    } else {
-      map.removeLayer(bridgeLayer);
-      setLayerLoadStatus('bridges-load-status', 'idle', 'Off');
+  var disclaimerDialog = document.getElementById('disclaimer-dialog');
+  document.getElementById('open-disclaimer').addEventListener('click', function() {
+    disclaimerDialog.showModal();
+  });
+  document.getElementById('close-disclaimer').addEventListener('click', function() {
+    disclaimerDialog.close();
+  });
+  document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape' && disclaimerDialog.open) {
+      disclaimerDialog.close();
     }
-    updateLegendHtml('bridges', e.target.checked, dpwhLegendHtml[2] || '<div class="legend-title">Bridges</div>');
+  });
+  disclaimerDialog.addEventListener('click', function(event) {
+    if (event.target === disclaimerDialog) {
+      disclaimerDialog.close();
+    }
   });
 
-  function exportMap() {
-    alert("Snapshot export feature goes here!");
-  }
 </script>
 
 </body>
