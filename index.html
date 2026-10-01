@@ -1481,7 +1481,7 @@
       return;
     }
 
-    var filePath = `Hazard/5-Year Flood Inundation/SPI_Bridge_${encodeURIComponent(bridgeId)}.geojson`;
+    var filePath = `Hazard/5-Year Flood Inundation/SYSTRA%20ID_${encodeURIComponent(bridgeId)}.geojson`;
     fetch(filePath)
       .then(function(response) {
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
