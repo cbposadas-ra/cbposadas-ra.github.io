@@ -681,31 +681,10 @@
         </div>
         <p class="gis-sidebar-summary">The project proposes to deliver 350 improved bridges, equivalent to approximately 10,500 linear meters, in Agrarian Reform Communities (ARCs) and Comprehensive Agrarian Reform Program (CARP)-covered areas nationwide, addressing agrarian reform beneficiaries' (ARBs) need for better infrastructure services.</p>
         
-        <!-- Basemap Selector -->
-        <div class="layer-category-card">
-          <div class="layer-category-header">Basemap Style</div>
-          <div class="layer-category-body">
-            <select id="basemap-select" style="width: 100%; background-color: #1f2937; color: #cbd5e1; border: 1px solid #374151; border-radius: 6px; padding: 0.4rem; font-size: 0.825rem; cursor: pointer;">
-              <option value="esriDark">Esri Dark Canvas</option>
-              <option value="esriStreets">Esri World Street Map</option>
-              <option value="topo">OpenTopoMap</option>
-              <option value="osmLight">OSM Light Gray (Positron)</option>
-            </select>
-            <div id="basemap-load-status" class="layer-load-status" data-state="loading" role="status" aria-live="polite">Loading basemap...</div>
-          </div>
-        </div>
-
         <!-- Project Locations Selector -->
         <div class="layer-category-card">
           <div class="layer-category-header">Bridge Location</div>
           <div class="layer-category-body">
-            <select id="project-select" style="width: 100%; background-color: #1f2937; color: #cbd5e1; border: 1px solid #374151; border-radius: 6px; padding: 0.4rem; font-size: 0.825rem; cursor: pointer;">
-              <option value="">-- Select a Bridge First --</option>
-            </select>
-            <div class="bridge-navigation">
-              <button id="previous-bridge" class="bridge-navigation-button" type="button" disabled>Previous</button>
-              <button id="next-bridge" class="bridge-navigation-button" type="button" disabled>Next</button>
-            </div>
             <label class="bridge-filter-label" for="filter-final-funder">Final Funder</label>
             <select id="filter-final-funder" class="bridge-filter-select">
               <option value="">All funders</option>
@@ -718,6 +697,13 @@
             <select id="filter-second-visit" class="bridge-filter-select">
               <option value="">All selection statuses</option>
             </select>
+            <select id="project-select" style="width: 100%; background-color: #1f2937; color: #cbd5e1; border: 1px solid #374151; border-radius: 6px; padding: 0.4rem; font-size: 0.825rem; cursor: pointer; margin-top: 0.65rem;">
+              <option value="">-- Select a Bridge First --</option>
+            </select>
+            <div class="bridge-navigation">
+              <button id="previous-bridge" class="bridge-navigation-button" type="button" disabled>Previous</button>
+              <button id="next-bridge" class="bridge-navigation-button" type="button" disabled>Next</button>
+            </div>
             <div id="bridge-data-load-status" class="layer-load-status" data-state="loading" role="status" aria-live="polite">Loading bridge locations...</div>
           </div>
         </div>
@@ -853,6 +839,20 @@
               <input class="form-check-input" type="checkbox" id="expressways">
               <label class="form-check-label" for="expressways">Expressways</label>
             </div>
+          </div>
+        </div>
+
+        <!-- Basemap Selector -->
+        <div class="layer-category-card">
+          <div class="layer-category-header">Basemap Style</div>
+          <div class="layer-category-body">
+            <select id="basemap-select" style="width: 100%; background-color: #1f2937; color: #cbd5e1; border: 1px solid #374151; border-radius: 6px; padding: 0.4rem; font-size: 0.825rem; cursor: pointer;">
+              <option value="esriDark">Esri Dark Canvas</option>
+              <option value="esriStreets">Esri World Street Map</option>
+              <option value="topo">OpenTopoMap</option>
+              <option value="osmLight">OSM Light Gray (Positron)</option>
+            </select>
+            <div id="basemap-load-status" class="layer-load-status" data-state="loading" role="status" aria-live="polite">Loading basemap...</div>
           </div>
         </div>
       </div>
