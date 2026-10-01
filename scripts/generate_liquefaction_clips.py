@@ -43,6 +43,11 @@ def bridge_buffer(lon, lat):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dry-run", action="store_true", help="Report output size without writing files")
+    parser.add_argument(
+        "--clean-stale",
+        action="store_true",
+        help="Remove old generated clips that do not match a successfully processed bridge",
+    )
     args = parser.parse_args()
 
     with BRIDGES_PATH.open(encoding="utf-8") as source:
@@ -56,15 +61,32 @@ def main():
         prepared_features.append((feature, geometry, geometry.bounds))
 
     total_bytes = 0
+    generated_filenames = set()
+    skipped_bridges = []
     output_dir_ready = False
     for bridge in bridges:
         properties = bridge.get("properties") or {}
-        bridge_id = properties.get("SPI_BRIDGE_ID")
+        bridge_id = properties.get("SYSTRA ID") or properties.get("SPI_BRIDGE_ID")
         coordinates = (bridge.get("geometry") or {}).get("coordinates") or []
         if bridge_id is None or len(coordinates) < 2:
+            skipped_bridges.append(str(bridge_id or properties.get("Bridge Name") or "unknown"))
             continue
 
-        lon, lat = float(coordinates[0]), float(coordinates[1])
+        try:
+            lon, lat = float(coordinates[0]), float(coordinates[1])
+        except (TypeError, ValueError):
+            skipped_bridges.append(str(bridge_id))
+            continue
+        if (
+            not math.isfinite(lon)
+            or not math.isfinite(lat)
+            or not -180 <= lon <= 180
+            or not -90 <= lat <= 90
+            or (lon == 0 and lat == 0)
+        ):
+            skipped_bridges.append(str(bridge_id))
+            continue
+
         buffer_geometry, to_projected, to_geographic = bridge_buffer(lon, lat)
         lat_delta = BUFFER_METERS / 110574
         lon_delta = BUFFER_METERS / (111320 * max(math.cos(math.radians(lat)), 0.01))
@@ -100,19 +122,32 @@ def main():
         collection = {"type": "FeatureCollection", "features": clipped_features}
         output_bytes = len(json.dumps(collection, separators=(",", ":"), allow_nan=False).encode("utf-8"))
         total_bytes += output_bytes
+        output_filename = f"SPI_Bridge_{bridge_id}.geojson"
+        generated_filenames.add(output_filename)
         if not args.dry_run:
             if not output_dir_ready:
                 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
                 output_dir_ready = True
-            output_path = OUTPUT_DIR / f"SPI_Bridge_{bridge_id}.geojson"
+            output_path = OUTPUT_DIR / output_filename
             with output_path.open("w", encoding="utf-8", newline="\n") as destination:
                 json.dump(collection, destination, separators=(",", ":"), allow_nan=False)
 
-    print(f"Bridge clips: {len(bridges)}")
+    print(f"Bridge records: {len(bridges)}")
+    print(f"Valid bridge clips: {len(generated_filenames)}")
+    print(f"Skipped invalid bridge records: {len(skipped_bridges)}")
+    if skipped_bridges:
+        print(f"Skipped bridge IDs: {', '.join(skipped_bridges)}")
     print(f"Original liquefaction data: {LIQUEFACTION_PATH.stat().st_size:,} bytes")
     print(f"Generated clip data: {total_bytes:,} bytes")
     if args.dry_run:
         print("Dry run only; no files written.")
+    elif args.clean_stale:
+        removed_count = 0
+        for existing_path in OUTPUT_DIR.glob("SPI_Bridge_*.geojson"):
+            if existing_path.name not in generated_filenames:
+                existing_path.unlink()
+                removed_count += 1
+        print(f"Removed stale clips: {removed_count}")
 
 
 if __name__ == "__main__":
