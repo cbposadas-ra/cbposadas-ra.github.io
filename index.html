@@ -330,10 +330,10 @@
       overflow: visible;
     }
 
-    .layer-category-card:has(.flood-info:hover) .form-check,
-    .layer-category-card:has(.flood-info:focus-within) .form-check {
+    .form-check:has(.flood-info:hover),
+    .form-check:has(.flood-info:focus-within) {
       position: relative;
-      z-index: 1;
+      z-index: 2;
     }
 
     .flood-info-tooltip strong {
