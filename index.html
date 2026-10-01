@@ -210,6 +210,33 @@
       cursor: pointer;
     }
 
+    .bridge-navigation {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .bridge-navigation-button {
+      flex: 1;
+      padding: 0.4rem 0.5rem;
+      border: 1px solid #374151;
+      border-radius: 6px;
+      background: #1f2937;
+      color: #cbd5e1;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    .bridge-navigation-button:hover:not(:disabled) {
+      background: #374151;
+    }
+
+    .bridge-navigation-button:disabled {
+      color: #64748b;
+      cursor: not-allowed;
+      opacity: 0.65;
+    }
+
     .sub-category-title {
       font-size: 0.75rem;
       font-weight: 700;
@@ -246,6 +273,82 @@
       font-size: 0.8rem;
       color: #cbd5e1;
       cursor: pointer;
+    }
+
+    .flood-info {
+      position: relative;
+      display: inline-flex;
+      margin-left: 0.35rem;
+      vertical-align: middle;
+    }
+
+    .flood-info-button {
+      display: inline-grid;
+      width: 1rem;
+      height: 1rem;
+      place-items: center;
+      padding: 0;
+      border: 1px solid #60a5fa;
+      border-radius: 50%;
+      background: transparent;
+      color: #93c5fd;
+      font: inherit;
+      font-size: 0.65rem;
+      font-weight: 700;
+      line-height: 1;
+      cursor: help;
+    }
+
+    .flood-info-tooltip {
+      position: absolute;
+      z-index: 20;
+      top: calc(100% + 0.5rem);
+      right: 0;
+      transform: translateX(1.5rem);
+      display: none;
+      width: min(15rem, calc(100vw - 2rem));
+      box-sizing: border-box;
+      padding: 0.75rem;
+      border: 1px solid #3b5268;
+      border-radius: 6px;
+      background: #172331;
+      color: #dbe5ef;
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+      font-size: 0.75rem;
+      font-weight: 400;
+      line-height: 1.45;
+      cursor: default;
+    }
+
+    .flood-info:hover .flood-info-tooltip,
+    .flood-info:focus-within .flood-info-tooltip {
+      display: block;
+    }
+
+    .layer-category-card:has(.flood-info:hover),
+    .layer-category-card:has(.flood-info:focus-within) {
+      overflow: visible;
+    }
+
+    .layer-category-card:has(.flood-info:hover) .form-check,
+    .layer-category-card:has(.flood-info:focus-within) .form-check {
+      position: relative;
+      z-index: 1;
+    }
+
+    .flood-info-tooltip strong {
+      display: block;
+      margin-bottom: 0.3rem;
+      color: #f8fafc;
+    }
+
+    .flood-info-source {
+      display: block;
+      margin-top: 0.55rem;
+      padding-top: 0.45rem;
+      border-top: 1px solid #3b5268;
+      color: #93c5fd;
+      font-weight: 600;
     }
 
     .layer-load-status {
@@ -599,6 +702,10 @@
             <select id="project-select" style="width: 100%; background-color: #1f2937; color: #cbd5e1; border: 1px solid #374151; border-radius: 6px; padding: 0.4rem; font-size: 0.825rem; cursor: pointer;">
               <option value="">-- Select a Bridge First --</option>
             </select>
+            <div class="bridge-navigation">
+              <button id="previous-bridge" class="bridge-navigation-button" type="button" disabled>Previous</button>
+              <button id="next-bridge" class="bridge-navigation-button" type="button" disabled>Next</button>
+            </div>
             <label class="bridge-filter-label" for="filter-final-funder">Final Funder</label>
             <select id="filter-final-funder" class="bridge-filter-select">
               <option value="">All funders</option>
@@ -627,6 +734,14 @@
             <div class="form-check">
               <input class="form-check-input" type="checkbox" id="flood_5year">
               <label class="form-check-label" for="flood_5year">5-Year Flood Inundation</label>
+              <span class="flood-info">
+                <button class="flood-info-button" type="button" aria-label="About the 5-Year Flood Hazard Zone" aria-describedby="flood-info-tooltip">i</button>
+                <span class="flood-info-tooltip" id="flood-info-tooltip" role="tooltip">
+                  <strong>5-Year Flood Hazard Zone:</strong>
+                  Models the flood extents and inundation depths resulting from a moderate rainfall event that has a 20% statistical probability (a 1-in-5 chance) of occurring in any given year.
+                  <span class="flood-info-source">Layer Source: UP NOAH</span>
+                </span>
+              </span>
             </div>
             <div id="flood_5year-load-status" class="layer-load-status" data-state="idle" role="status" aria-live="polite">Off</div>
           </div>
@@ -896,6 +1011,8 @@
 
   var activeProjectGroup = L.layerGroup().addTo(map);
   var selectDropdown = document.getElementById('project-select');
+  var previousBridgeButton = document.getElementById('previous-bridge');
+  var nextBridgeButton = document.getElementById('next-bridge');
   var bridgeDetailsContent = document.getElementById('bridge-details-content');
 
   window.selectedBridgeCoords = null; 
@@ -1042,6 +1159,32 @@
     });
   }
 
+  function getNavigableBridgeOptions() {
+    return Array.from(selectDropdown.options).filter(function(option) {
+      return option.value !== '' && option.value !== 'all';
+    });
+  }
+
+  function updateBridgeNavigationButtons() {
+    var bridgeOptions = getNavigableBridgeOptions();
+    var selectedIndex = bridgeOptions.findIndex(function(option) {
+      return option.value === selectDropdown.value;
+    });
+    previousBridgeButton.disabled = selectedIndex <= 0;
+    nextBridgeButton.disabled = selectedIndex < 0 || selectedIndex >= bridgeOptions.length - 1;
+  }
+
+  function navigateBridge(direction) {
+    var bridgeOptions = getNavigableBridgeOptions();
+    var selectedIndex = bridgeOptions.findIndex(function(option) {
+      return option.value === selectDropdown.value;
+    });
+    var nextIndex = selectedIndex + direction;
+    if (nextIndex < 0 || nextIndex >= bridgeOptions.length) return;
+    selectDropdown.value = bridgeOptions[nextIndex].value;
+    selectDropdown.dispatchEvent(new Event('change'));
+  }
+
   function updateBridgeDropdown() {
     if (!window.bridgeFeatures) return;
     var previousValue = selectDropdown.value;
@@ -1082,6 +1225,7 @@
       selectDropdown.value = '';
       selectDropdown.dispatchEvent(new Event('change'));
     }
+    updateBridgeNavigationButtons();
   }
 
   function populateBridgeFilters() {
@@ -1128,6 +1272,7 @@
 
   selectDropdown.addEventListener('change', function(e) {
     var index = e.target.value;
+    updateBridgeNavigationButtons();
     activeProjectGroup.clearLayers();
     clearFloodLayer();
     clearLiquefactionLayer();
@@ -1230,6 +1375,13 @@
     if (document.getElementById('flood_5year').checked) {
       loadSelectedFloodLayer();
     }
+  });
+
+  previousBridgeButton.addEventListener('click', function() {
+    navigateBridge(-1);
+  });
+  nextBridgeButton.addEventListener('click', function() {
+    navigateBridge(1);
   });
 
   function clearBridgeDependentLayerSelections() {
