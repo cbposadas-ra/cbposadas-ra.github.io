@@ -744,6 +744,11 @@
               </span>
             </div>
             <div id="flood_5year-load-status" class="layer-load-status" data-state="idle" role="status" aria-live="polite">Off</div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="active_volcanoes">
+              <label class="form-check-label" for="active_volcanoes">Active Volcanoes</label>
+            </div>
+            <div id="active_volcanoes-load-status" class="layer-load-status" data-state="idle" role="status" aria-live="polite">Off</div>
           </div>
         </div>
 
@@ -888,6 +893,7 @@
       <h3>Active Legends</h3>
       <div id="legend-liquefaction" class="legend-block"></div>
       <div id="legend-flood_5year" class="legend-block"></div>
+      <div id="legend-active_volcanoes" class="legend-block"></div>
       <div id="legend-nipas" class="legend-block"></div>
       <div id="legend-poverty_incidence" class="legend-block"></div>
       <!-- Educational -->
@@ -1049,6 +1055,30 @@
       layer.bindPopup(popup);
     }
   });
+  var activeVolcanoesLayer = L.geoJSON(null, {
+    pointToLayer: function(feature, latlng) {
+      var properties = feature.properties || {};
+      var volcanoName = String(properties.last_edited_date || properties.volcno || 'Active volcano').trim();
+      var popup = document.createElement('strong');
+      popup.textContent = volcanoName;
+      var buffer = L.circle(latlng, {
+        radius: 10000,
+        color: '#ef4444',
+        weight: 2,
+        fillColor: '#ef4444',
+        fillOpacity: 0.1
+      }).bindPopup(popup);
+      var marker = L.circleMarker(latlng, {
+        radius: 6,
+        color: '#fee2e2',
+        weight: 1.5,
+        fillColor: '#dc2626',
+        fillOpacity: 1
+      }).bindPopup(popup);
+      return L.layerGroup([buffer, marker]);
+    }
+  });
+  var activeVolcanoesData = null;
 
   function clearBridgeDetails(message) {
     bridgeDetailsContent.className = 'bridge-details-placeholder';
@@ -1479,6 +1509,62 @@
       return;
     }
     loadSelectedFloodLayer();
+  });
+
+  document.getElementById('active_volcanoes').addEventListener('change', function(event) {
+    if (!event.target.checked) {
+      if (map.hasLayer(activeVolcanoesLayer)) map.removeLayer(activeVolcanoesLayer);
+      activeVolcanoesLayer.clearLayers();
+      updateLegendHtml('active_volcanoes', false, '');
+      setLayerLoadStatus('active_volcanoes-load-status', 'idle', 'Off');
+      return;
+    }
+
+    function showActiveVolcanoes(data) {
+      if (!event.target.checked) return;
+      activeVolcanoesLayer.clearLayers();
+      activeVolcanoesLayer.addData(data);
+      map.addLayer(activeVolcanoesLayer);
+      var volcanoCount = activeVolcanoesLayer.getLayers().length;
+      setLayerLoadStatus(
+        'active_volcanoes-load-status',
+        volcanoCount ? 'loaded' : 'empty',
+        volcanoCount ? `Loaded: ${volcanoCount} active volcanoes` : 'Loaded: no active volcanoes'
+      );
+      var markerSwatch = getLegendShapeHtml('circle', '#dc2626');
+      var bufferSwatch = '<span style="display:inline-block;width:12px;height:12px;border:2px solid #ef4444;border-radius:50%;vertical-align:middle;margin-right:6px;"></span>';
+      updateLegendHtml(
+        'active_volcanoes',
+        true,
+        `<div class="legend-title">Active Volcanoes</div><div>${markerSwatch}Volcano</div><div>${bufferSwatch}10 km radius</div>`
+      );
+    }
+
+    if (activeVolcanoesData) {
+      showActiveVolcanoes(activeVolcanoesData);
+      return;
+    }
+
+    var filePath = 'Hazard/Active Volcanoes.geojson';
+    setLayerLoadStatus('active_volcanoes-load-status', 'loading', 'Loading active volcanoes...');
+    fetch(filePath)
+      .then(function(response) {
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        return response.json();
+      })
+      .then(function(data) {
+        if (!Array.isArray(data.features)) throw new Error('GeoJSON does not contain a features array.');
+        activeVolcanoesData = data;
+        showActiveVolcanoes(data);
+      })
+      .catch(function(error) {
+        if (!event.target.checked) return;
+        console.error(`Error loading ${filePath}:`, error);
+        event.target.checked = false;
+        activeVolcanoesLayer.clearLayers();
+        updateLegendHtml('active_volcanoes', false, '');
+        setLayerLoadStatus('active_volcanoes-load-status', 'error', 'Failed to load');
+      });
   });
 
   function updateLegendHtml(id, active, html) {

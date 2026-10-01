@@ -1,0 +1,509 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.05772090000005,
+          6.012954313000023
+        ]
+      },
+      "properties": {
+        "objectid": 1,
+        "volcno": "082",
+        "vtcode": "01",
+        "gthcode": "2020100010820000",
+        "globalid": "{60CC0256-BE68-4076-AB01-DD76C83F14E3}",
+        "created_user": null,
+        "created_date": null,
+        "last_edited_user": null,
+        "last_edited_date": "Bud Dajo"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          124.471617,
+          11.632675
+        ]
+      },
+      "properties": {
+        "objectid": 2,
+        "volcno": "046",
+        "vtcode": "01",
+        "gthcode": "2020100010460000",
+        "globalid": "{EF0E0891-0C43-4B66-90F0-5094501798EF}",
+        "created_user": null,
+        "created_date": null,
+        "last_edited_user": null,
+        "last_edited_date": "Mt. Camalabagoan"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          124.8889822000001,
+          6.100703456000076
+        ]
+      },
+      "properties": {
+        "objectid": 3,
+        "volcno": "325",
+        "vtcode": "01",
+        "gthcode": "2020100013250000",
+        "globalid": "{E4C74D6C-5B8D-4C6C-98EF-DF019AC681D4}",
+        "created_user": null,
+        "created_date": null,
+        "last_edited_user": null,
+        "last_edited_date": "Mt. Melibengoy"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          125.07603330000006,
+          6.361112500000047
+        ]
+      },
+      "properties": {
+        "objectid": 4,
+        "volcno": "292",
+        "vtcode": "01",
+        "gthcode": "2020100012920000",
+        "globalid": "{ED11ECD3-3254-495E-A5F3-45F8013AF21C}",
+        "created_user": null,
+        "created_date": null,
+        "last_edited_user": null,
+        "last_edited_date": "Mt. Matutum"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          126.06418420000011,
+          7.393591481000044
+        ]
+      },
+      "properties": {
+        "objectid": 5,
+        "volcno": "234",
+        "vtcode": "01",
+        "gthcode": "2020100012340000",
+        "globalid": "{1D7E3F99-37DE-4B25-9755-898610F54AAB}",
+        "created_user": null,
+        "created_date": null,
+        "last_edited_user": null,
+        "last_edited_date": "Leonard Kniaseff"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          124.317179,
+          7.643709
+        ]
+      },
+      "properties": {
+        "objectid": 6,
+        "volcno": "262",
+        "vtcode": "01",
+        "gthcode": "2020100012620000",
+        "globalid": "{DB92F771-34D9-4674-8CAA-4AC5A11D21A3}",
+        "created_user": null,
+        "created_date": null,
+        "last_edited_user": null,
+        "last_edited_date": "Mt. Makaturing"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          124.50638880000008,
+          7.690659808000021
+        ]
+      },
+      "properties": {
+        "objectid": 7,
+        "volcno": "343",
+        "vtcode": "01",
+        "gthcode": "2020100013430000",
+        "globalid": "{3ED18432-5EA6-4375-918C-F09C83720F4F}",
+        "created_user": null,
+        "created_date": null,
+        "last_edited_user": null,
+        "last_edited_date": "Mt. Piapayungan"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          125.0698513000001,
+          7.876802700000042
+        ]
+      },
+      "properties": {
+        "objectid": 8,
+        "volcno": "297",
+        "vtcode": "01",
+        "gthcode": "2020100012970000",
+        "globalid": "{424E281D-E03C-4066-BA08-7E63139166AB}",
+        "created_user": null,
+        "created_date": null,
+        "last_edited_user": null,
+        "last_edited_date": "Musuan Peak"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          124.67119020000007,
+          9.203618
+        ]
+      },
+      "properties": {
+        "objectid": 9,
+        "volcno": "150",
+        "vtcode": "01",
+        "gthcode": "2020100011500000",
+        "globalid": "{1E71189A-F63F-497E-A3D5-22581CD2DFAC}",
+        "created_user": null,
+        "created_date": null,
+        "last_edited_user": null,
+        "last_edited_date": "Mt. Hibok Hibok"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          123.13228960000004,
+          10.41127246000002
+        ]
+      },
+      "properties": {
+        "objectid": 10,
+        "volcno": "169",
+        "vtcode": "01",
+        "gthcode": "2020100011690000",
+        "globalid": "{8ADE8C05-D88B-43ED-B8B6-1B896ADB01C8}",
+        "created_user": null,
+        "created_date": null,
+        "last_edited_user": null,
+        "last_edited_date": "Mt. Kanlaon"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          125.2159792000001,
+          10.279864180000061
+        ]
+      },
+      "properties": {
+        "objectid": 11,
+        "volcno": "092",
+        "vtcode": "01",
+        "gthcode": "2020100010920000",
+        "globalid": "{114BA317-F0AC-41B5-9660-43CA37D07F2F}",
+        "created_user": null,
+        "created_date": null,
+        "last_edited_user": null,
+        "last_edited_date": "Mt. Cabalian"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          124.05444710000006,
+          12.768533570000045
+        ]
+      },
+      "properties": {
+        "objectid": 12,
+        "volcno": "088",
+        "vtcode": "01",
+        "gthcode": "2020100010880000",
+        "globalid": "{1B053536-173F-4E86-A93F-57BA6DF9FB29}",
+        "created_user": null,
+        "created_date": null,
+        "last_edited_user": null,
+        "last_edited_date": "Mt. Bulusan"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          123.68614940000009,
+          13.25519
+        ]
+      },
+      "properties": {
+        "objectid": 13,
+        "volcno": "293",
+        "vtcode": "01",
+        "gthcode": "2020100012930000",
+        "globalid": "{0A65215A-A206-461B-85DE-D56B328A9A5E}",
+        "created_user": null,
+        "created_date": null,
+        "last_edited_user": null,
+        "last_edited_date": "Mt. Mayon"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          123.45479050000006,
+          13.456055040000024
+        ]
+      },
+      "properties": {
+        "objectid": 14,
+        "volcno": "157",
+        "vtcode": "01",
+        "gthcode": "2020100011570000",
+        "globalid": "{C3C8AA84-E770-4E4C-9ADA-6537AAEDB96F}",
+        "created_user": null,
+        "created_date": null,
+        "last_edited_user": null,
+        "last_edited_date": "Mt. Asog"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          123.3832867000001,
+          13.65596596000006
+        ]
+      },
+      "properties": {
+        "objectid": 15,
+        "volcno": "160",
+        "vtcode": "01",
+        "gthcode": "2020100011600000",
+        "globalid": "{FB5E821A-CE30-4503-A3CD-203E507FF5E3}",
+        "created_user": null,
+        "created_date": null,
+        "last_edited_user": null,
+        "last_edited_date": "Mt. Isarog"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.4880303000001,
+          14.060384870000064
+        ]
+      },
+      "properties": {
+        "objectid": 16,
+        "volcno": "032",
+        "vtcode": "01",
+        "gthcode": "2020100010320000",
+        "globalid": "{DA7FE93F-540D-4315-9272-20AB8387240C}",
+        "created_user": null,
+        "created_date": null,
+        "last_edited_user": null,
+        "last_edited_date": "Mt. Banahaw"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.99780190000001,
+          14.01011292000004
+        ]
+      },
+      "properties": {
+        "objectid": 17,
+        "volcno": "370",
+        "vtcode": "01",
+        "gthcode": "2020100013700000",
+        "globalid": "{9764D791-4F59-4D2D-888C-E525CA8B3B7D}",
+        "created_user": null,
+        "created_date": null,
+        "last_edited_user": null,
+        "last_edited_date": "Taal "
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.35083920000011,
+          15.141622780000034
+        ]
+      },
+      "properties": {
+        "objectid": 18,
+        "volcno": "333",
+        "vtcode": "01",
+        "gthcode": "2020100013330000",
+        "globalid": "{C7744E39-1256-4925-9D9A-DB0720DE4830}",
+        "created_user": null,
+        "created_date": null,
+        "last_edited_user": null,
+        "last_edited_date": "Mt. Pinatubo"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          122.11534090000009,
+          18.222727150000026
+        ]
+      },
+      "properties": {
+        "objectid": 19,
+        "volcno": "095",
+        "vtcode": "01",
+        "gthcode": "2020100010950000",
+        "globalid": "{58878D83-0227-4D39-A0C1-4EC687D0AD20}",
+        "created_user": null,
+        "created_date": null,
+        "last_edited_user": null,
+        "last_edited_date": "Mt. Cagua"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.862803,
+          18.830368300000032
+        ]
+      },
+      "properties": {
+        "objectid": 20,
+        "volcno": "100",
+        "vtcode": "01",
+        "gthcode": "2020100011000000",
+        "globalid": "{DC2BDE2B-FA59-4358-814F-A2CC7EF0BAED}",
+        "created_user": null,
+        "created_date": null,
+        "last_edited_user": null,
+        "last_edited_date": "Mt. Camiguin"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          122.20147330000009,
+          19.07532954000004
+        ]
+      },
+      "properties": {
+        "objectid": 21,
+        "volcno": "131",
+        "vtcode": "01",
+        "gthcode": "2020100011310000",
+        "globalid": "{27EE56B0-A94A-412B-BA18-303A9E4E2905}",
+        "created_user": null,
+        "created_date": null,
+        "last_edited_user": null,
+        "last_edited_date": "Didicas "
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.95005210000011,
+          19.52407586000004
+        ]
+      },
+      "properties": {
+        "objectid": 22,
+        "volcno": "020",
+        "vtcode": "01",
+        "gthcode": "2020100010200000",
+        "globalid": "{9413355E-BA35-4D4F-81A5-4C62274140C2}",
+        "created_user": null,
+        "created_date": null,
+        "last_edited_user": null,
+        "last_edited_date": "Mt.Pangasun"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          122.010782,
+          20.466689
+        ]
+      },
+      "properties": {
+        "objectid": 23,
+        "volcno": "156",
+        "vtcode": "01",
+        "gthcode": "2020100011560000",
+        "globalid": "{C81A227E-8042-4F1E-9E17-87ED4D068701}",
+        "created_user": null,
+        "created_date": null,
+        "last_edited_user": null,
+        "last_edited_date": "Mt. Iraya"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.9136668000001,
+          19.53915107000006
+        ]
+      },
+      "properties": {
+        "objectid": 24,
+        "volcno": "365",
+        "vtcode": "01",
+        "gthcode": "2020100013650000",
+        "globalid": "{5F40E7B8-59A7-440C-B585-24DB94620D5E}",
+        "created_user": null,
+        "created_date": null,
+        "last_edited_user": null,
+        "last_edited_date": "Mt.Babuyan"
+      }
+    }
+  ]
+}
