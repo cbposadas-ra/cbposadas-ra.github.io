@@ -209,6 +209,17 @@
       font-size: 0.8rem;
       cursor: pointer;
     }
+    .bridge-selector-separator {
+      margin-top: 0.75rem;
+      padding-top: 0.65rem;
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
+    }
+
+    .bridge-match-count {
+      margin-bottom: 0.35rem;
+      color: #94a3b8;
+      font-size: 0.7rem;
+    }
 
     .bridge-navigation {
       display: flex;
@@ -685,6 +696,10 @@
         <div class="layer-category-card">
           <div class="layer-category-header">Bridge Location</div>
           <div class="layer-category-body">
+            <label class="bridge-filter-label" for="filter-bridge-category">Bridge Category</label>
+            <select id="filter-bridge-category" class="bridge-filter-select">
+              <option value="">All categories</option>
+            </select>
             <label class="bridge-filter-label" for="filter-final-funder">Final Funder</label>
             <select id="filter-final-funder" class="bridge-filter-select">
               <option value="">All funders</option>
@@ -697,9 +712,12 @@
             <select id="filter-second-visit" class="bridge-filter-select">
               <option value="">All selection statuses</option>
             </select>
-            <select id="project-select" style="width: 100%; background-color: #1f2937; color: #cbd5e1; border: 1px solid #374151; border-radius: 6px; padding: 0.4rem; font-size: 0.825rem; cursor: pointer; margin-top: 0.65rem;">
-              <option value="">-- Select a Bridge First --</option>
-            </select>
+            <div class="bridge-selector-separator">
+              <div id="bridge-match-count" class="bridge-match-count" role="status" aria-live="polite">Loading matching bridges...</div>
+              <select id="project-select" style="width: 100%; background-color: #1f2937; color: #cbd5e1; border: 1px solid #374151; border-radius: 6px; padding: 0.4rem; font-size: 0.825rem; cursor: pointer;">
+                <option value="">-- Select a Bridge First --</option>
+              </select>
+            </div>
             <div class="bridge-navigation">
               <button id="previous-bridge" class="bridge-navigation-button" type="button" disabled>Previous</button>
               <button id="next-bridge" class="bridge-navigation-button" type="button" disabled>Next</button>
@@ -735,6 +753,11 @@
               <label class="form-check-label" for="active_volcanoes">Active Volcanoes</label>
             </div>
             <div id="active_volcanoes-load-status" class="layer-load-status" data-state="idle" role="status" aria-live="polite">Off</div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="fault_system">
+              <label class="form-check-label" for="fault_system">Fault System Information</label>
+            </div>
+            <div id="fault_system-load-status" class="layer-load-status" data-state="idle" role="status" aria-live="polite">Off</div>
           </div>
         </div>
 
@@ -894,6 +917,7 @@
       <div id="legend-liquefaction" class="legend-block"></div>
       <div id="legend-flood_5year" class="legend-block"></div>
       <div id="legend-active_volcanoes" class="legend-block"></div>
+      <div id="legend-fault_system" class="legend-block"></div>
       <div id="legend-nipas" class="legend-block"></div>
       <div id="legend-poverty_incidence" class="legend-block"></div>
       <!-- Educational -->
@@ -1031,6 +1055,30 @@
     Medium: '#f59e0b',
     High: '#ef4444'
   };
+  var faultSystemData = null;
+  var faultSystemStyleGroups = [
+    { codes: ['01,24'], color: '#ff0000', widthPoints: 1.5, legendClass: 'activeSolid' },
+    { codes: ['01,18', '01,17'], color: '#ff0000', widthPoints: 1.00063, legendClass: 'activeSolid' },
+    { codes: ['01,20', '01,22', '01,26', '01,28'], color: '#ff0000', widthPoints: 1, legendClass: 'activeSolid' },
+    { codes: ['01,16'], color: '#ffaa00', widthPoints: 1.00063, legendClass: 'activeOrange' },
+    { codes: ['01,25'], color: '#ff3737', widthPoints: 1, dashed: true, legendClass: 'activeDashed' },
+    { codes: ['01,02'], color: '#ff0000', widthPoints: 1.5, dashed: true, legendClass: 'activeDashed' },
+    { codes: ['01,38', '01,34', '01,40', '01,33', '01,11', '01,09', '01,29', '01,14'], color: '#ff0000', widthPoints: 1, dashed: true, legendClass: 'activeDashed' },
+    { codes: ['01,13'], color: '#ff0000', widthPoints: 7, legendClass: 'activeSolid' },
+    { codes: ['01,03', '01,05', '01,36'], color: '#ff0000', widthPoints: 6, legendClass: 'activeSolid' },
+    { codes: ['02,23'], color: '#000000', widthPoints: 1.5, legendClass: 'potentialSolid' },
+    { codes: ['02,35', '02,15', '02,19', '02,21'], color: '#000000', widthPoints: 1, legendClass: 'potentialSolid' },
+    { codes: ['02,27', '02,12'], color: '#000000', widthPoints: 7, legendClass: 'potentialSolid' },
+    { codes: ['02,04', '02,36'], color: '#000000', widthPoints: 6, legendClass: 'potentialSolid' },
+    { codes: ['02,01'], color: '#000000', widthPoints: 1.5, dashed: true, legendClass: 'potentialDashed' },
+    { codes: ['02,07', '02,06', '02,39', '02,08', '02,10'], color: '#000000', widthPoints: 1, dashed: true, legendClass: 'potentialDashed' }
+  ];
+  var faultSystemStyles = Object.create(null);
+  faultSystemStyleGroups.forEach(function(group) {
+    group.codes.forEach(function(code) {
+      faultSystemStyles[code] = group;
+    });
+  });
   var floodLayer = L.geoJSON(null, {
     style: function(feature) {
       var riskLevel = (feature.properties || {})['Risk Level'];
@@ -1053,6 +1101,26 @@
       risk.textContent = `Risk Level: ${properties['Risk Level'] || 'Unknown'}`;
       popup.appendChild(risk);
       layer.bindPopup(popup);
+    }
+  });
+  var faultSystemLayer = L.geoJSON(null, {
+    renderer: L.canvas(),
+    filter: function(feature) {
+      var properties = feature.properties || {};
+      return Boolean(faultSystemStyles[`${properties.fccode},${properties.ltcode}`]);
+    },
+    style: function(feature) {
+      var properties = feature.properties || {};
+      var rule = faultSystemStyles[`${properties.fccode},${properties.ltcode}`];
+      var weight = rule.widthPoints * 96 / 72;
+      return {
+        color: rule.color,
+        weight: weight,
+        opacity: 1,
+        lineCap: 'square',
+        lineJoin: 'bevel',
+        dashArray: rule.dashed ? `${weight * 4} ${weight * 2}` : null
+      };
     }
   });
   var activeVolcanoesLayer = L.geoJSON(null, {
@@ -1174,6 +1242,7 @@
   }
 
   var bridgeFilterDefinitions = [
+    { elementId: 'filter-bridge-category', property: 'Bridge Category', placeholder: 'All categories' },
     { elementId: 'filter-final-funder', property: 'Final Funder', placeholder: 'All funders' },
     { elementId: 'filter-visited-systra', property: 'Visited by SYSTRA', placeholder: 'All visit statuses' },
     { elementId: 'filter-second-visit', property: 'Selected for 2nd Visit of SYSTRA', placeholder: 'All selection statuses' }
@@ -1219,17 +1288,19 @@
     if (!window.bridgeFeatures) return;
     var previousValue = selectDropdown.value;
     var matchingFeatures = getFilteredBridgeFeatures();
+    var matchCount = matchingFeatures.length;
+    document.getElementById('bridge-match-count').textContent = `${matchCount} ${matchCount === 1 ? 'bridge' : 'bridges'} match current filters`;
     selectDropdown.replaceChildren();
 
     var placeholder = document.createElement('option');
     placeholder.value = '';
-    placeholder.textContent = matchingFeatures.length ? '-- Select a Bridge --' : '-- No matching bridges --';
+    placeholder.textContent = matchCount ? '-- Select a Bridge --' : '-- No matching bridges --';
     selectDropdown.appendChild(placeholder);
 
-    if (matchingFeatures.length) {
+    if (matchCount) {
       var allBridgesOption = document.createElement('option');
       allBridgesOption.value = 'all';
-      allBridgesOption.textContent = `Show All Matching Bridges (${matchingFeatures.length})`;
+      allBridgesOption.textContent = `Show All Matching Bridges (${matchCount})`;
       selectDropdown.appendChild(allBridgesOption);
     }
 
@@ -1566,6 +1637,83 @@
         setLayerLoadStatus('active_volcanoes-load-status', 'error', 'Failed to load');
       });
   });
+
+    document.getElementById('fault_system').addEventListener('change', function(event) {
+      if (!event.target.checked) {
+        if (map.hasLayer(faultSystemLayer)) map.removeLayer(faultSystemLayer);
+        faultSystemLayer.clearLayers();
+        updateLegendHtml('fault_system', false, '');
+        setLayerLoadStatus('fault_system-load-status', 'idle', 'Off');
+        return;
+      }
+      loadFaultSystemLayer();
+    });
+
+    function loadFaultSystemLayer() {
+      var checkbox = document.getElementById('fault_system');
+      if (!checkbox.checked) return;
+
+      var showFaultSystemData = function(data) {
+        if (!checkbox.checked) return;
+        faultSystemLayer.clearLayers();
+        faultSystemLayer.addData(data);
+        map.addLayer(faultSystemLayer);
+
+        var faultCount = faultSystemLayer.getLayers().length;
+        setLayerLoadStatus(
+          'fault_system-load-status',
+          faultCount ? 'loaded' : 'empty',
+          faultCount ? `Loaded: ${faultCount} fault features` : 'Loaded: no matching fault features'
+        );
+
+        var legendCounts = { activeSolid: 0, activeDashed: 0, activeOrange: 0, potentialSolid: 0, potentialDashed: 0 };
+        data.features.forEach(function(feature) {
+          var properties = feature.properties || {};
+          var rule = faultSystemStyles[`${properties.fccode},${properties.ltcode}`];
+          if (rule) legendCounts[rule.legendClass] += 1;
+        });
+        var legendRows = [
+          { key: 'activeSolid', label: 'Active Fault', color: '#ff0000' },
+          { key: 'activeDashed', label: 'Active Fault (dashed)', color: '#ff0000', dashed: true },
+          { key: 'activeOrange', label: 'Active Fault (orange)', color: '#ffaa00' },
+          { key: 'potentialSolid', label: 'Potentially Active Fault', color: '#000000' },
+          { key: 'potentialDashed', label: 'Potentially Active Fault (dashed)', color: '#000000', dashed: true }
+        ];
+        var legendHtml = '<div class="legend-title">Fault System Information</div>';
+        legendRows.forEach(function(row) {
+          var dashStyle = row.dashed ? 'dashed' : 'solid';
+          var swatch = `<span style="display:inline-block;width:18px;border-top:2px ${dashStyle} ${row.color};vertical-align:middle;margin-right:6px;"></span>`;
+          legendHtml += `<div>${swatch}${row.label} (${legendCounts[row.key]})</div>`;
+        });
+        updateLegendHtml('fault_system', true, legendHtml);
+      };
+
+      if (faultSystemData) {
+        showFaultSystemData(faultSystemData);
+        return;
+      }
+
+      var filePath = 'Hazard/Fault%20System%20Information.geojson';
+      setLayerLoadStatus('fault_system-load-status', 'loading', 'Loading Fault System Information...');
+      fetch(filePath)
+        .then(function(response) {
+          if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+          return response.json();
+        })
+        .then(function(data) {
+          if (!Array.isArray(data.features)) throw new Error('GeoJSON does not contain a features array.');
+          faultSystemData = data;
+          showFaultSystemData(data);
+        })
+        .catch(function(error) {
+          if (!checkbox.checked) return;
+          console.error(`Error loading ${filePath}:`, error);
+          checkbox.checked = false;
+          faultSystemLayer.clearLayers();
+          updateLegendHtml('fault_system', false, '');
+          setLayerLoadStatus('fault_system-load-status', 'error', 'Failed to load');
+        });
+    }
 
   function updateLegendHtml(id, active, html) {
     var legend = document.getElementById(`legend-${id}`);
