@@ -758,6 +758,11 @@
               <label class="form-check-label" for="fault_system">Fault System Information</label>
             </div>
             <div id="fault_system-load-status" class="layer-load-status" data-state="idle" role="status" aria-live="polite">Off</div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="storm_surge_4">
+              <label class="form-check-label" for="storm_surge_4">Storm Surge Advisory 4</label>
+            </div>
+            <div id="storm_surge_4-load-status" class="layer-load-status" data-state="idle" role="status" aria-live="polite">Off</div>
           </div>
         </div>
 
@@ -918,6 +923,7 @@
       <div id="legend-flood_5year" class="legend-block"></div>
       <div id="legend-active_volcanoes" class="legend-block"></div>
       <div id="legend-fault_system" class="legend-block"></div>
+      <div id="legend-storm_surge_4" class="legend-block"></div>
       <div id="legend-nipas" class="legend-block"></div>
       <div id="legend-poverty_incidence" class="legend-block"></div>
       <!-- Educational -->
@@ -1050,6 +1056,7 @@
   window.activeFacilityLayers = {}; 
   var selectedFloodBridgeId = null;
   var floodDataCache = {};
+  var stormSurgeDataCache = {};
   var floodRiskColors = {
     Low: '#22c55e',
     Medium: '#f59e0b',
@@ -1096,6 +1103,30 @@
       var popup = document.createElement('div');
       var title = document.createElement('strong');
       title.textContent = '5-Year Flood Inundation';
+      popup.appendChild(title);
+      var risk = document.createElement('div');
+      risk.textContent = `Risk Level: ${properties['Risk Level'] || 'Unknown'}`;
+      popup.appendChild(risk);
+      layer.bindPopup(popup);
+    }
+  });
+  var stormSurgeLayer = L.geoJSON(null, {
+    style: function(feature) {
+      var riskLevel = (feature.properties || {})['Risk Level'];
+      var color = floodRiskColors[riskLevel] || '#64748b';
+      return {
+        color: color,
+        weight: 1,
+        opacity: 0.9,
+        fillColor: color,
+        fillOpacity: 0.45
+      };
+    },
+    onEachFeature: function(feature, layer) {
+      var properties = feature.properties || {};
+      var popup = document.createElement('div');
+      var title = document.createElement('strong');
+      title.textContent = 'Storm Surge Advisory 4';
       popup.appendChild(title);
       var risk = document.createElement('div');
       risk.textContent = `Risk Level: ${properties['Risk Level'] || 'Unknown'}`;
@@ -1377,6 +1408,7 @@
     activeProjectGroup.clearLayers();
     clearFloodLayer();
     clearLiquefactionLayer();
+    clearStormSurgeLayer();
     window.selectedBridgeCoords = null;
     selectedFloodBridgeId = null;
     if (!document.getElementById('flood_5year').checked) {
@@ -1384,6 +1416,9 @@
     }
     if (!document.getElementById('liquefaction').checked) {
       setLayerLoadStatus('liquefaction-load-status', 'idle', 'Off');
+    }
+    if (!document.getElementById('storm_surge_4').checked) {
+      setLayerLoadStatus('storm_surge_4-load-status', 'idle', 'Off');
     }
 
     if (index === "" || !window.bridgeFeatures) {
@@ -1476,6 +1511,9 @@
     if (document.getElementById('flood_5year').checked) {
       loadSelectedFloodLayer();
     }
+    if (document.getElementById('storm_surge_4').checked) {
+      loadStormSurgeForSelectedBridge();
+    }
   });
 
   previousBridgeButton.addEventListener('click', function() {
@@ -1495,6 +1533,11 @@
     liquefactionCheckbox.checked = false;
     clearLiquefactionLayer();
     setLayerLoadStatus('liquefaction-load-status', 'idle', 'Off');
+
+    var stormSurgeCheckbox = document.getElementById('storm_surge_4');
+    stormSurgeCheckbox.checked = false;
+    clearStormSurgeLayer();
+    setLayerLoadStatus('storm_surge_4-load-status', 'idle', 'Off');
   }
 
   function clearLiquefactionLayer() {
@@ -1507,6 +1550,12 @@
     floodLayer.clearLayers();
     if (map.hasLayer(floodLayer)) map.removeLayer(floodLayer);
     updateLegendHtml('flood_5year', false, '');
+  }
+
+  function clearStormSurgeLayer() {
+    stormSurgeLayer.clearLayers();
+    if (map.hasLayer(stormSurgeLayer)) map.removeLayer(stormSurgeLayer);
+    updateLegendHtml('storm_surge_4', false, '');
   }
 
   function loadSelectedFloodLayer() {
@@ -1581,6 +1630,94 @@
     }
     loadSelectedFloodLayer();
   });
+
+  document.getElementById('storm_surge_4').addEventListener('change', function(event) {
+    if (!event.target.checked) {
+      clearStormSurgeLayer();
+      setLayerLoadStatus('storm_surge_4-load-status', 'idle', 'Off');
+      return;
+    }
+    loadStormSurgeForSelectedBridge();
+  });
+
+  function loadStormSurgeForSelectedBridge() {
+    var checkbox = document.getElementById('storm_surge_4');
+    if (!checkbox.checked) return;
+    if (!window.selectedBridgeCoords || selectedFloodBridgeId === null || selectedFloodBridgeId === undefined || selectedFloodBridgeId === '') {
+      alert('Please select one Bridge Location first.');
+      checkbox.checked = false;
+      clearStormSurgeLayer();
+      setLayerLoadStatus('storm_surge_4-load-status', 'error', 'Select one bridge first');
+      return;
+    }
+
+    var bridgeId = String(selectedFloodBridgeId);
+    var showStormSurgeData = function(data) {
+      if (!checkbox.checked || String(selectedFloodBridgeId) !== bridgeId) return;
+      stormSurgeLayer.clearLayers();
+      if (data && Array.isArray(data.features)) stormSurgeLayer.addData(data);
+      if (stormSurgeLayer.getLayers().length) map.addLayer(stormSurgeLayer);
+
+      var riskCounts = {};
+      if (data && Array.isArray(data.features)) {
+        data.features.forEach(function(feature) {
+          var riskLevel = (feature.properties || {})['Risk Level'] || 'Unknown';
+          riskCounts[riskLevel] = (riskCounts[riskLevel] || 0) + 1;
+        });
+      }
+      var featureCount = stormSurgeLayer.getLayers().length;
+      var noHazard = !data || featureCount === 0;
+      setLayerLoadStatus(
+        'storm_surge_4-load-status',
+        noHazard ? 'empty' : 'loaded',
+        noHazard ? `No storm surge hazard for Bridge ID ${bridgeId}` : `Loaded: ${featureCount} storm surge areas`
+      );
+
+      var legendHtml = '<div class="legend-title">Storm Surge Advisory 4</div>';
+      if (noHazard) {
+        legendHtml += '<div>No hazard for this bridge</div>';
+      } else {
+        Object.keys(floodRiskColors).forEach(function(riskLevel) {
+          var color = floodRiskColors[riskLevel];
+          var swatch = `<span style="display:inline-block;width:14px;height:14px;background:${color};border:1px solid #94a3b8;vertical-align:middle;margin-right:6px;"></span>`;
+          legendHtml += `<div>${swatch}${riskLevel} (${riskCounts[riskLevel] || 0})</div>`;
+        });
+      }
+      updateLegendHtml('storm_surge_4', true, legendHtml);
+    };
+
+    setLayerLoadStatus('storm_surge_4-load-status', 'loading', `Loading Storm Surge Advisory 4 for Bridge ID ${bridgeId}...`);
+    if (Object.prototype.hasOwnProperty.call(stormSurgeDataCache, bridgeId)) {
+      showStormSurgeData(stormSurgeDataCache[bridgeId]);
+      return;
+    }
+
+    var filePath = `Hazard/Storm%20Surge%20Advisory%204/SYSTRA%20ID_${encodeURIComponent(bridgeId)}.geojson`;
+    fetch(filePath)
+      .then(function(response) {
+        if (response.status === 404) return null;
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        return response.json();
+      })
+      .catch(function(error) {
+        if (error instanceof TypeError) return null;
+        throw error;
+      })
+      .then(function(data) {
+        if (data && !Array.isArray(data.features)) {
+          throw new Error('GeoJSON does not contain a features array.');
+        }
+        stormSurgeDataCache[bridgeId] = data;
+        showStormSurgeData(data);
+      })
+      .catch(function(error) {
+        if (!checkbox.checked || String(selectedFloodBridgeId) !== bridgeId) return;
+        console.error(`Error loading ${filePath}:`, error);
+        checkbox.checked = false;
+        clearStormSurgeLayer();
+        setLayerLoadStatus('storm_surge_4-load-status', 'error', 'Failed to load');
+      });
+  }
 
   document.getElementById('active_volcanoes').addEventListener('change', function(event) {
     if (!event.target.checked) {
